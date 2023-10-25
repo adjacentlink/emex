@@ -1,0 +1,20 @@
+<otestpoint id="${emex.hostname}" discovery="0.0.0.0:8881" publish="0.0.0.0:8882">
+  <probe configuration="probe-emex-monitor.xml">
+    <python module="otestpoint.emex.monitor" class="Monitor"/>
+  </probe>
+  <probe configuration="probe-emane-physicallayer.xml">
+    <python module="otestpoint.emane.physicallayer" class="PhysicalLayer"/>
+  </probe>
+  <probe>
+    <python module="otestpoint.system.network" class="Network"/>
+  </probe>
+  <probe configuration="probe-srslte-ue.xml">
+    <python module="otestpoint.lte.srsue" class="SRSUE"/>
+  </probe>
+  <probe configuration="probe-emanelte-ue.xml">
+    <python module="otestpoint.lte.emaneue" class="EMANEUE"/>
+  </probe>
+  <probe configuration="otestpoint-probe-mgen.xml">
+    <python module="otestpoint.mgen.flows" class="Flows"/>
+  </probe>
+</otestpoint>

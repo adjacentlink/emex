@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<emanelte>
+  <platform id="${emane.nemid}"
+            loglevel="2"
+            logfile="${emex.log_path}/emane.log"
+            otamanagerdevice="ota0"
+            eventservicedevice="backchan0"
+            antennaprofilemanifesturi="/tmp/etce/current_test/antennaprofilemanifest.xml">
+
+    <radiomodel pcrcurveuri="pcr.xml"
+                antenna="omni"
+                rfsignaltable.averageallantennas="true"
+                rfsignaltable.averageallfrequencies="true"
+                resourceblocktxpower="${rm.resourceblocktxpower}"/>
+
+    <phy noisemode="all"
+	 fixedantennagainenable="${phy.fixedantennagainenable}"
+	 fixedantennagain="${phy.fixedantennagain}"
+         propagationmodel="${phy.propagationmodel}"
+         subid="${phy.subid}"/>
+
+  </platform>
+</emanelte>

@@ -1,0 +1,397 @@
+/*
+ * Copyright (c) 2022,2023 - Adjacent Link LLC, Bridgewater, New Jersey
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of Adjacent Link LLC nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * See toplevel COPYING for more information.
+ */
+
+syntax = "proto2";
+
+import "emex/common.proto";
+
+/*****************************************************************************
+ *
+ *   The EMulation EXecutor (EMEX) API for executing ElectroMagnetic Operating
+ *   Environments (EMOEs) on an EMEX server which runs the EMEX daemon (emexd).
+ *
+ */
+
+
+/*****************************************************************************
+ *   EMOEs are constructed from model types, of which there are,
+ *   currently, two:
+ *
+ *   A *PlatformType* notionally maps one to one to a physical entity
+ *   in an ElectroMagnetic Operating Environment (EMOE) - a
+ *   PlatformType might be (for example) a manpack radio, a
+ *   terrestrial or airborne vehicle. A PlatformType may contain one
+ *   or more Spectrum Dependent Systems (SDS) which move together when
+ *   the containing PlatformType moves. Each SDS is included in a
+ *   PlatformType as a (sub) ComponentType. Other ComponentTypes may
+ *   be introduced as needed to model more complex platforms - a
+ *   routing element, for example, is anticipated.
+ *
+ *   ComponentTypes contain configurable parameters organized in
+ *   groups, most with sensible defaults. Creating a Platform from a
+ *   PlatformType requires uniquely naming the Platform and specifying
+ *   (at least) a value for all required parameters.
+ *
+ *   An *AntennaType* names a gain pattern specified at all
+ *   elevations and bearings - it maps one-to-one to an antennaprofile
+ *   as described on the emane wiki:
+ *
+ *      https://github.com/adjacentlink/emane/wiki/Antenna-Profile
+ *
+ *   An Antenna instance, derived from an AntennaType, can specify
+ *   a spatial offset (longitudinal, latitudinal, vertical) of
+ *   the antenna from the platform's position in space.
+ *
+ *   An EMEX client issues a ModelTypesRequest to an EMEX server to
+ *   obtain the available PlatformTypes and AntennaTypes.
+ */
+message ModelTypesRequest
+{}
+
+message ModelTypesReply
+{
+  message ParamType
+  {
+    required string name = 1;
+    optional string description = 3;
+    repeated string default = 4;
+  }
+
+  message ParamGroupType
+  {
+    required string name = 1;
+    repeated ParamType param_types = 2;
+  }
+
+  message ComponentType
+  {
+    required string name = 1;
+    required string component_type = 2;
+    required string value = 3;
+    repeated ParamGroupType paramgroup_types = 4;
+  }
+
+  message AntennaType
+  {
+    required string name = 1;
+    repeated ParamType param_types = 2;
+    optional string description = 3;
+  }
+
+  message PlatformType
+  {
+    required string name = 1;
+    optional string template_name = 2;
+    optional string description = 3;
+    repeated ComponentType componenttypes = 4;
+  }
+
+  repeated PlatformType platformtypes = 1;
+  repeated AntennaType antennatypes = 2;
+}
+
+
+message Emoe
+{
+  message ParamValue
+  {
+    required string name = 1;
+    repeated string value = 2;
+  }
+
+  message ParamGroup
+  {
+    required string group = 1;
+    repeated ParamValue params = 2;
+  }
+
+  message Component
+  {
+    required string name = 1;
+    required string component_type = 2;
+    required string value = 3;
+    repeated ParamGroup param_groups = 4;
+    repeated string labels = 5;
+  }
+
+  message Platform
+  {
+    required string name = 1;
+    required string platformtype = 2;
+    repeated Component components = 3;
+  }
+
+  message Antenna
+  {
+    required string name = 1;
+    required string antenna_type = 2;
+    repeated ParamValue params = 3;
+  }
+
+  message InitialCondition
+  {
+    message Pathloss
+    {
+      repeated string component_names = 1;
+      required string remote_platform_name = 2;
+      repeated string remote_component_names = 3;
+      required float pathloss = 4;
+    }
+
+    message POV
+    {
+      repeated string component_names = 1;
+      required float latitude = 2;
+      required float longitude = 3;
+      required float altitude = 4;
+      optional float azimuth = 5 [default=0.0];
+      optional float elevation = 6 [default=0.0];
+      optional float speed = 7 [default=0.0];
+      optional float pitch = 8 [default=0.0];
+      optional float roll = 9 [default=0.0];
+      optional float yaw = 10 [default=0.0];
+    }
+
+    message AntennaPointing
+    {
+      repeated string component_names = 1;
+      optional float elevation = 2 [default=0.0];
+      optional float azimuth = 3 [default=0.0];
+    }
+
+    required string platform_name = 1;
+    repeated Pathloss pathlosses = 2;
+    repeated POV pov = 3;
+    repeated AntennaPointing antenna_pointings = 4;
+  }
+
+  required string name = 1;
+  repeated Platform platforms = 2;
+  repeated InitialCondition initial_conditions = 3;
+  repeated Antenna antennas = 4;
+}
+
+
+/*****************************************************************************
+ *   A request to check that an offered EMOE is well formed
+ *   and can be allocated from available resources.
+ *
+ *   An EMOE consists of a unique name, a set of antenna patterns (optional),
+ *   and a set of platforms. Each platform lists the waveforms it uses, waveform
+ *   parameter values, platform parameter values and, initial physical layer
+ *   conditions. Most of these are optional.
+ */
+message CheckEmoeRequest
+{
+  required string emoe_name = 1;
+  required Emoe emoe = 2;
+}
+
+message CheckEmoeReply
+{
+  required string emoe_name = 1;
+  required ResultType result = 2;
+  optional string message = 3;
+}
+
+
+/*****************************************************************************
+ *   Start an EMOE. The EMOE representation here is the same
+ *   as for the check routines.
+ */
+message StartEmoeRequest
+{
+  required string emoe_name = 1;
+  required Emoe emoe = 2;
+}
+
+message StartEmoeReply
+{
+  required string emoe_name = 1;
+  required ResultType result = 2;
+  optional string message = 3;
+  optional string handle = 4;
+}
+
+
+/*****************************************************************************
+ *   Update an EMOE. The EMOE representation here is the same
+ *   as for the check routines. The returned EmoeAccessor
+ *   contains any modifications required for communication
+ *   to the new EMOE, though communication is not guaranteed
+ *   until the EMOE transitions back to the RUNNING state.
+ */
+message UpdateEmoeRequest
+{
+  required string handle = 1;
+  required Emoe emoe = 2;
+}
+
+message UpdateEmoeReply
+{
+  required string emoe_name = 1;
+  required ResultType result = 2;
+  optional string message = 3;
+  optional string handle = 4;
+}
+
+
+/*****************************************************************************
+ *   Stop an EMOE.
+ */
+message StopEmoeRequest
+{
+  required string handle = 1;
+}
+
+message StopEmoeReply
+{
+  required string handle = 1;
+  required string emoe_name = 2;
+  required ResultType result = 3;
+  optional string message = 4;
+}
+
+
+/*****************************************************************************
+ *   Request a list of EMOEs known to the EMEX servers and their state.
+ */
+message ListEmoesRequest
+{}
+
+message EmoeAccessor
+{
+  required string service_name = 1;
+  required string ip_address = 2;
+  required uint32 port = 3;
+}
+
+message ListEmoesReply
+{
+  message EmoeEntry
+  {
+    required string handle = 1;
+    required string emoe_name = 2;
+    required EmoeState state = 3;
+    repeated EmoeAccessor emoe_accessors = 4;
+    optional uint32 assigned_cpus = 5;
+  }
+
+  repeated EmoeEntry entries = 1;
+  optional uint32 total_cpus = 2;
+  optional uint32 available_cpus = 3;
+}
+
+
+/*****************************************************************************
+ *   Unsolicited server advertisement of an EMOE state transition. This
+ *   serves to notify the end of a longer running process triggered
+ *   by an earlier Request/Reply transaction - namely to mark transitions:
+ *
+ *      QUEUED -> CONNECTED
+ *      CONNECTED -> STARTING
+ *      STARTING -> RUNNING
+ *      RUNNING -> UPDATING
+ *      UPDATING -> RUNNING
+ *      STARTING|RUNNING|UPDATING -> STOPPING
+ *      STOPPING -> STOPPED
+ *
+ */
+message EmoeStateTransitionEvent
+{
+    required string handle = 1;
+    required string emoe_name = 2;
+    required EmoeState state = 3;
+    repeated EmoeAccessor emoe_accessors = 4;
+    optional uint32 assigned_cpus = 5;
+    optional string message = 6;
+}
+
+
+/*****************************************************************************
+ *   The ClientMessage is an outer wrapper for all EMEX Client to Server
+ *   messages. The Type field indicates the enclosed message. Though the
+ *   message format does not preclude multiple messages, the intention
+ *   is that each ClientMessage contains one sub-message type.
+ */
+message ClientMessage
+{
+  enum Type
+  {
+    MODEL_TYPES_REQUEST_TYPE = 1;
+    LIST_EMOES_REQUEST_TYPE = 2;
+    CHECK_EMOE_REQUEST_TYPE = 3;
+    START_EMOE_REQUEST_TYPE = 4;
+    UPDATE_EMOE_REQUEST_TYPE = 5;
+    STOP_EMOE_REQUEST_TYPE = 6;
+  }
+
+  required Type type = 1;
+  optional ModelTypesRequest modelTypesRequest = 2;
+  optional ListEmoesRequest listEmoesRequest = 3;
+  optional CheckEmoeRequest checkEmoeRequest = 4;
+  optional StartEmoeRequest startEmoeRequest = 5;
+  optional UpdateEmoeRequest updateEmoeRequest = 6;
+  optional StopEmoeRequest stopEmoeRequest = 7;
+}
+
+
+/*****************************************************************************
+ *   The ServerMessage is an outer wrapper for all EMEX Server to Client
+ *   messages. The Type field indicates the enclosed message. Though the
+ *   message format does not preclude multiple messages, the intention
+ *   is that each ServerMessage contains one sub-message type.
+ */
+message ServerMessage
+{
+  enum Type
+  {
+    MODEL_TYPES_REPLY_TYPE = 1;
+    LIST_EMOES_REPLY_TYPE = 2;
+    CHECK_EMOE_REPLY_TYPE = 3;
+    START_EMOE_REPLY_TYPE = 4;
+    UPDATE_EMOE_REPLY_TYPE = 5;
+    STOP_EMOE_REPLY_TYPE = 6;
+    EMOE_STATE_TRANSITION_EVENT = 7;
+  }
+
+  required Type type = 1;
+  optional ModelTypesReply modelTypesReply = 2;
+  optional ListEmoesReply listEmoesReply = 3;
+  optional CheckEmoeReply checkEmoeReply = 4;
+  optional StartEmoeReply startEmoeReply = 5;
+  optional UpdateEmoeReply updateEmoeReply = 6;
+  optional StopEmoeReply stopEmoeReply = 7;
+  optional EmoeStateTransitionEvent emoeStateTransitionEvent = 8;
+}

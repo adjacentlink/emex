@@ -1,0 +1,8 @@
+name: blockageaft180_200
+type: blockagepattern
+profilefile: blockageaft180_200.xml
+description:
+    Blockage pattern file with full blockage aft
+    (90 degrees <= bearing <= 270 degrees) of the
+    platform and at elevations above and below
+    10 degrees

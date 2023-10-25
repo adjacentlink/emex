@@ -1,0 +1,38 @@
+name: lte.ue
+type: waveform
+template: lte.ue
+description:
+    lte.ue is a model of the LTE mobile User Equipment, the user mobile device.
+parameters:
+    resources:
+        cpus:
+            default: 2
+    emane:
+        nemid:
+    phy:
+        propagationmodel:
+            default: freespace
+            choice: [precomputed, 2ray, freespace]
+        subid:
+            default: 500
+        antenna0:
+            default: omni
+        antenna0_north:
+            default: 0.0
+        antenna0_east:
+            default: 0.0
+        antenna0_up:
+            default: 0.0
+    rm:
+        resourceblocktxpower:
+            default: 6.0
+        downlink_frequency:
+            default: 2175000000
+        uplink_frequency:
+            default: 1775000000
+    net:
+        ipv4address:
+        ipv4mask:
+            default: 255.255.255.0
+        device:
+            default: srsue

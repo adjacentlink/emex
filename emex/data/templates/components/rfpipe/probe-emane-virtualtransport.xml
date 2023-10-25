@@ -1,0 +1,7 @@
+<probe-emane-VirtualTransport address="127.0.0.1">
+  <probes>
+    <EMANE.VirtualTransport.Counters.General enable="no"/>
+    <EMANE.VirtualTransport.Tables.Events enable="no"/>
+    <EMANE.VirtualTransport.Tables.Status enable="no"/>
+  </probes>
+</probe-emane-VirtualTransport>

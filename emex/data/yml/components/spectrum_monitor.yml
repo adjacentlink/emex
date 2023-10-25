@@ -1,0 +1,23 @@
+name: spectrum_monitor
+type: host
+template: spectrum_monitor
+description:
+    EMANE Spectrum Monitor
+parameters:
+    resources:
+        cpus:
+            default: 1
+    emane:
+        nemid:
+    phy:
+        propagationmodel:
+            default: freespace
+            choice: [precomputed, 2ray, freespace]
+        antenna0:
+            default: omni
+        antenna0_north:
+            default: 0.0
+        antenna0_east:
+            default: 0.0
+        antenna0_up:
+            default: 0.0

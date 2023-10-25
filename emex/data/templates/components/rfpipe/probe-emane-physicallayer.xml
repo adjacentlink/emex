@@ -1,0 +1,7 @@
+<probe-emane-PhysicalLayer address="127.0.0.1">
+  <probes>
+    <EMANE.PhysicalLayer.Counters.General enable="no"/>
+    <EMANE.PhysicalLayer.Tables.Events enable="yes"/>
+    <EMANE.PhysicalLayer.Tables.Status enable="yes"/>
+  </probes>
+</probe-emane-PhysicalLayer>

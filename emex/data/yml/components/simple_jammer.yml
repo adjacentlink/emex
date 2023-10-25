@@ -1,0 +1,14 @@
+name: simple_jammer
+type: host
+template: simple_jammer
+description:
+    Open Source emane-simple-jammer-service instance
+parameters:
+    resources:
+        cpus:
+            default: 1
+    emane:
+        nemid:
+    phy:
+        subid:
+            default: 999

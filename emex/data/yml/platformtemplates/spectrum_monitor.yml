@@ -1,0 +1,10 @@
+name: spectrum_monitor
+type: platform_template
+description:
+    Platform hosting a spectrum monitor.
+components:
+    h1:
+        type: host
+        traffic_endpoint: false
+        testpoint_publisher: true
+        description: spectrum monitor host

@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<!DOCTYPE platform SYSTEM "file:///usr/share/emane/dtd/platform.dtd">
+
+<platform>
+  <param name="otamanagergroup" value="224.1.2.8:45702"/>
+  <param name="otamanagerdevice" value="ota0"/>
+  <param name="otamanagerchannelenable" value="on"/>
+  <param name="eventservicegroup" value="224.1.2.8:45703"/>
+  <param name="eventservicedevice" value="backchan0"/>
+  <param name="controlportendpoint" value="0.0.0.0:47000"/>
+  <param name="antennaprofilemanifesturi" value="/tmp/etce/current_test/antennaprofilemanifest.xml"/>
+
+  <nem definition="nem.xml" id="${emane.nemid}">
+    <transport definition="transvirtual.xml">
+      <param name="device" value="${net.device}"/>
+      <param name="address" value="${net.ipv4address}"/>
+      <param name="mask" value="${net.ipv4mask}"/>
+    </transport>
+  </nem>
+</platform>

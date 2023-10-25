@@ -1,0 +1,164 @@
+/*
+ * Copyright (c) 2022 - Adjacent Link LLC, Bridgewater, New Jersey
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of Adjacent Link LLC nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * See toplevel COPYING for more information.
+ */
+
+syntax = "proto2";
+
+/*****************************************************************************
+ *
+ *   The EMulation EXecutor (EMEX) API for executing ElectroMagnetic Operating
+ *   Environments (EMOEs) on an EMEX server which runs the EMEX daemon (emexd).
+ *
+ */
+
+
+/*****************************************************************************
+ *   Basis types.
+ */
+enum ResultType
+{
+  FAIL = 1;
+  PASS = 2;
+}
+
+
+/*****************************************************************************
+ *   An ElectroMagnetic Operating Environment (EMOE) is the
+ *   fundamental transactional element between EMEX client and EMEX
+ *   servers that host EMOEs. An EMOE is one of 7 states:
+ *
+ * 1. QUEUED: The EMOE enters the QUEUED state on reception
+ *            of a valid `StartEmoeRequest` message
+ *            for an EMOE that can be provisioned with current
+ *            resources. The request is enqueued to a separate
+ *            worker thread that executes the call to start
+ *            the EMOE containers. Start requests are serviced
+ *            in FIFO order.
+ *
+ * 2. CONNECTED: The EMOE enters the CONNECTED when the
+ *               `emexcontainerd` instance in the EMOE container
+ *               establishes connection back to the controlling
+ *               `emexd`.  It signals that the EMOEs container
+ *               successfully launched.
+ *
+ * 3. STARTING: After connecting to the controlling emexd instance,
+ *              emexcontainerd orchestrates the intantiation of all
+ *              EMOE container nodes and applications that comprise
+ *              the scenario. The STARTING state spans the duration of
+ *              this process - from container launch to all
+ *              applications ready.
+ *
+ * 4. RUNNING: The EMOE enters the RUNNING state once of the emulation
+ *             applications are up and running and the EMOE is ready
+ *             to accept scenario inputs.
+ *
+ * 5. UPDATING: Placeholder state for a planned future capability for
+ *              allowing new platforms to be added to a running
+ *              EMOE. This is not currently implemented.
+ *
+ * 6. STOPPING: An EMOE enters the STOPPING state triggered by a
+ *             `StopEmoeRequest`. During this stopping state, the EMOEs
+ *             emulation applications are halted and the EMOE container
+ *             is stopped and removed. The EMOE STOPPING state is
+ *             signaled by `StopEmoeReply[result=PASS]` or by an
+ *             `EmoeStateTransitionEvent[state=STOPPING] in case of an
+ *             asynchronous internal error.
+ *
+ * 7. STOPPED: An EMOE enters the STOPPED state once it's container has
+ *            been stopped and removed. The EMOE STOPPED state is
+ *            signaled by an `EmoeStateTransitionEvent[state=STOPPED]`
+ *            event or determined via polling with listEmoes. Any EMOE
+ *            that is no longer among the entries in a listEmoesReply is
+ *            also implicitly in the STOPPED state.
+ *
+ * 8. FAILED: An EMOE enters the FAILED state from the QUEUED state
+ *            when emexd is unable to start the EMOEs container.
+ *
+ *
+ *   The EMEX client interacts with an EMEX server using the following
+ *   operations:
+ *
+ *   1. Check that an EMOE can be executed on an available server -
+ *      that the computational resources required by the EMOE are
+ *      available (CheckEmoeRequest/Reply).
+ *
+ *   2. Start an EMOE (StartEmoeRequest/Reply). The
+ *      StartEmoeReply[result=PASS] also returns a unique handle -
+ *      analogous to a file descriptor returned by the *open* library
+ *      function familiar to any programmer. The client uses this
+ *      handle for all subsequent interactions with the associated
+ *      EMOE.
+ *
+ *   4. Update an EMOE by adding or removing Platforms
+ *      (UpdateEmoeRequest/Reply). An update is executed from the
+ *      client by sending the new fully formed EMOE. The server
+ *      determines which platforms are added or removed and
+ *      adds/removes them from the RUNNING EMOE. This is slated
+ *      for implementation after all aspects of "fully specified
+ *      EMOES from startup" is complete.
+ *
+ *   5. Stop an EMOE (StopEmoeRequest/Reply). The stop request
+ *      transitions the EMOE from RUNNING to the STOPPING state. This
+ *      transition is not reversible. During the STOPPING state, the
+ *      EMEX kills the EMOE processes inside the container but does
+ *      not stop the enclosing container.
+ *
+ *   6. Query a list of known EMOEs (ListEmoesRequest/Reply). The
+ *      reply contains an entry for each EMOE known by the server.
+ *      The entry contains the unique EMOE handle, name, current state
+ *      and the EMOE's accessors - detailed information needed to
+ *      interact with the RUNNING EMOE - i.e. drive the emulation
+ *      scenario by injecting events, configuration changes and
+ *      (optionally) reading out live platform or sensor data. Each
+ *      accessor consists of the service name and the host address and
+ *      port where it can be accessed.
+ *
+ *   7. Receive asynchronous EMOE state transitions
+ *      (EmoeStateTransitionEvent). The state message contains the
+ *      EMOE's current state and it's accessors (once knonw). EMOE
+ *      state transition events are not transmitted by default (see
+ *      the emexd state-messages parameter) requiring clients to poll
+ *      EMOE state via the listEmoesRequest/Reply instead.
+ *
+ */
+enum EmoeState
+{
+  QUEUED = 1;
+  CONNECTED = 2;
+  STARTING = 3;
+  RUNNING = 4;
+  UPDATING = 5;
+  STOPPING = 6;
+  STOPPED = 7;
+  FAILED = 8;
+}

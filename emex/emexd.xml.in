@@ -1,0 +1,58 @@
+<!-- Example emexd configuration file showing defaults.  Pass to emexd
+     with the -c option or place it at /etc/emexd.xml. -c option
+     takes precedence over /etc/emexd.xml. emexd runs with the
+     default values when no configuration file is provided. -->
+<emexd>
+  <!-- emexd endpoint for listening for client connections -->
+  <client-listen address="127.0.0.1" port="49901"/>
+
+  <!-- emexd endpoint for listening for container connections.
+       uses the default docker0 address -->
+  <container-listen address="172.17.0.1" port="49902"/>
+
+  <!-- disable asynchronous state messages to clients. this should
+       be false for all provided emex clients which operate in
+       strict request/response order. -->
+  <state-messages enable="false"/>
+
+  <!-- specify as a range the cpus on the system available for allocating
+       for containers. the maximum emexd will attempt to use
+       is "1-MAXID" where MAXID is the max cpu id on the system.
+       By default will use MAXID/4 to MAXID. Uncomment and change
+       to a valid range on your system to customize.
+  <allowed-cpus ids=""/>
+  -->
+  <!-- specify the host ports that emexd will bind to container ports
+       to connect to clients -->
+  <allowed-host-ports ports="9000-9999"/>
+
+  <!-- use the named docker image to run EMOEs -->
+  <docker-image name="emex:@VERSION@"/>
+
+  <!-- emexd logging level, one of debug,info,warning or error -->
+  <emexcontainerd-loglevel level="info"/>
+
+  <!-- At startup and shutdown, stop and remove all containers with
+       image name starting with "emex" (when set to true). When set to false,
+       only stop and remove the containers controlled by this emexd instance
+       at shutdown - the user may need to handle any orphaned
+       containers separately. -->
+  <stop-all-containers enable="true"/>
+
+  <!-- emexd creates a subdirectory in /tmp/emex for each EMOE
+       executed. the directory contains configuration and output artifacts -
+       logs and raw data.  at the end of the scenario, emexd will keep or
+       delete this directory as directed by this parameter - one of
+       keep,delete,deleteonsuccess. The last setting will only delete the
+       emex directory after a scenario that completes successfully, to help
+       preserve artifacts to troubleshoot possible scenario errors.
+       containers. -->
+  <emexdirectory action="keep"/>
+
+  <!-- One of {none, prefix, suffix}. emexd will form an EMOE container
+       name with the EMOE ID and the EMOE name specified by the client when
+       set to "prefix" or "suffix" - the ID is prepended/appended to the name
+       accordingly. When set to none, the EMOE container name is the EMOE
+       name set by the client. prefix is the default. -->
+  <container-datetime-tag format="prefix"/>
+</emexd>

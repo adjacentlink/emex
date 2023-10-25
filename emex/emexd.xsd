@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ Copyright (c) 2022,2023 - Adjacent Link LLC, Bridgewater, New Jersey
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+
+ * Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in
+   the documentation and/or other materials provided with the
+   distribution.
+ * Neither the name of Adjacent Link LLC nor the names of its
+   contributors may be used to endorse or promote products derived
+   from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+
+ See toplevel COPYING for more information.
+-->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="TrueFalse">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="true" />
+      <xs:enumeration value="false" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="DebugLevel">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="error" />
+      <xs:enumeration value="warning" />
+      <xs:enumeration value="info" />
+      <xs:enumeration value="debug" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="DirectoryOperationType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="keep" />
+      <xs:enumeration value="delete" />
+      <xs:enumeration value="deleteonsuccess" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ContainerDateTimeTagFormat">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none" />
+      <xs:enumeration value="prefix" />
+      <xs:enumeration value="suffix" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="emexd">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="client-listen"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="address"
+                                 type="xs:string"
+                                 use="required"/>
+             <xs:attribute name="port"
+                                 type="xs:unsignedShort"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="container-listen"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="address"
+                                 type="xs:string"
+                                 use="required"/>
+             <xs:attribute name="port"
+                                 type="xs:unsignedShort"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="state-messages"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="enable"
+                                 type="TrueFalse"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="allowed-cpus"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="ids"
+                                 type="xs:string"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="allowed-host-ports"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="ports"
+                                 type="xs:string"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="docker-image"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="name"
+                                 type="xs:string"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="emexcontainerd-loglevel"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="level"
+                                 type="DebugLevel"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="stop-all-containers"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="enable"
+                                 type="TrueFalse"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="emexdirectory"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="action"
+                                 type="DirectoryOperationType"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="container-datetime-tag"
+		    minOccurs="0"
+		    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="format"
+                                 type="ContainerDateTimeTagFormat"
+                                 use="required"/>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

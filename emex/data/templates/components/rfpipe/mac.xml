@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mac SYSTEM "file:///usr/share/emane/dtd/mac.dtd">
+<mac library="rfpipemaclayer">
+  <param name="pcrcurveuri" value="pcr.xml"/>
+  <param name="datarate" value="${rm.datarate}"/>
+  <param name="delay" value="${rm.delay}"/>
+  <param name="jitter" value="${rm.jitter}"/>
+  <param name="rfsignaltable.averageallantennas" value="false"/>
+  <param name="rfsignaltable.averageallfrequencies" value="true"/>
+</mac>

@@ -1,0 +1,10 @@
+name: base_station
+type: platform_template
+description:
+    A cell system base station.
+components:
+    r1:
+        type: waveform
+        traffic_endpoint: false
+        testpoint_publisher: true
+        description: The base station waveform to run.

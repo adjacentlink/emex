@@ -1,0 +1,10 @@
+name: jammer
+type: platform_template
+description:
+    Platform hosting a jammer.
+components:
+    h1:
+        type: host
+        traffic_endpoint: false
+        testpoint_publisher: false
+        description: jammer host

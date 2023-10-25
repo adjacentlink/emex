@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE profiles SYSTEM "file:///usr/share/emane/dtd/antennaprofile.dtd">
+<antennaprofile>
+  <antennapattern>
+    <elevation min="-90" max="90">
+      <bearing min="0" max="359">
+        <gain value="6"/>
+      </bearing>
+    </elevation>
+  </antennapattern>
+</antennaprofile>
+

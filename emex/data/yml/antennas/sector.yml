@@ -1,0 +1,15 @@
+name: sector
+type: antenna
+description:
+    Forward sector antenna with user specified vertical and
+    horizontal bandwidth and in-beam and rejection gains.
+parameters:
+    vertical_beamwidth:
+        default: 30
+    horizontal_beamwidth:
+        default: 30
+    gain:
+        default: 6
+    rejection:
+        default: -200
+    

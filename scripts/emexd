@@ -1,0 +1,90 @@
+#!/bin/bash
+#
+# Copyright (c) 2022 - Adjacent Link LLC, Bridgewater, New Jersey
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+# * Neither the name of Adjacent Link LLC nor the names of its
+#   contributors may be used to endorse or promote products derived
+#   from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# See toplevel COPYING for more information.
+
+
+function usage() {
+    echo "usage: emexd [-d] [-p PIDFILE] [-c CONFIGFILE] [-f LOGFILE] [-l LOGLEVEL]"
+    echo
+    echo "options:"
+    echo "       -d:            run as daemon"
+    echo "       -p PIDFILE:    specify a pidfile"
+    echo "       -c CONFIGFILE: specify the emexd configuration file"
+    echo "       -f LOGFILE:    specify the emexd log file"
+    echo "       -l LOGLEVEL:   specify the log level, one of critical",
+    echo "                      error, warning, info, debug, notset."
+    echo "                      Default: info"
+}
+
+
+daemonize_arg=
+config_file_arg=
+log_file_arg=
+log_level=info
+pid_file_arg=
+
+while getopts ":hdc:f:l:p:" opt; do
+    case $opt in
+        d) daemonize_arg="-d"
+           ;;
+        c) config_file=${OPTARG}
+           config_file_arg="--config-file ${config_file}"
+           echo "config_file=${config_file}"
+           ;;
+        f) log_file=${OPTARG};
+           log_file_arg="--log-file ${log_file}"
+           echo "log_file=${log_file}"
+           ;;
+        l) log_level=${OPTARG};
+           echo "log_level=${log_level}"
+           ;;
+        p) pid_file=${OPTARG};
+           pid_file_arg="--pid-file ${pid_file}"
+           echo "pid_file=${pid_file}"
+           ;;
+        h) usage && exit 0
+           ;;
+        \?) echo "Invalid option -$OPTARG"
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+waveform-resourced \
+    ${daemonize_arg} \
+    ${config_file_arg} \
+    ${log_file_arg} \
+    ${pid_file_arg} \
+    --log-level=${log_level} \
+        waveform_resource.plugins.emex.emexd.Plugin

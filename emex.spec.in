@@ -1,0 +1,70 @@
+Summary: Emuluation Executor
+Name: emex
+Version: @VERSION@
+Release: 1%{?dist}
+License: BSD
+Group: Development/Libraries
+URL: https://adjacentlink.com
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+Vendor: Adjacent Link LLC
+BuildArch: noarch
+%define base_name emex
+%define with_old_depends 0
+%define with_pathfix 1
+
+%define with_pathfix 0%{!?el7}
+
+%global _description \
+EMANE Node Director
+
+%description %{_description}
+
+%package -n python3-%{base_name}
+Summary: %{summary}
+%{?python_provide:%python_provide python3-%{base_name}}
+BuildRequires: python3-devel protobuf-compiler
+Requires: python3-lxml python3-pandas python3-yaml python3-protobuf python3-daemon python3-docker python3-mako python3-waveform-resource
+%description -n python3-%{base_name} %{_description}
+
+%prep
+%setup -q
+
+%build
+%configure
+make
+
+%install
+make  DESTDIR=${RPM_BUILD_ROOT} PYTHON=%{__python3} install
+pathfix.py -pni "%{__python3} %{py3_shbang_opts}" %{buildroot}%{_bindir}/*
+
+find ${RPM_BUILD_ROOT} -name '*.a' -exec rm '{}'  \;
+find ${RPM_BUILD_ROOT} -name '*.la' -exec rm '{}' \;
+mkdir -p ${RPM_BUILD_ROOT}%{_pkgdocdir}
+install -t ${RPM_BUILD_ROOT}%{_pkgdocdir} AUTHORS %{!?_licensedir:COPYING} ChangeLog NEWS README 
+%if 0%{?_licensedir:1}
+mkdir -p ${RPM_BUILD_ROOT}%{_licensedir}/%{name}
+install -t ${RPM_BUILD_ROOT}%{_licensedir}/%{name} COPYING
+%endif
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files -n python3-%{base_name}
+%defattr(-,root,root,-)
+%{_bindir}/emex
+%{_bindir}/emexd
+%{_bindir}/emexcontainerd
+%{_bindir}/emex-jsonserver
+%{_bindir}/emex-jsonclient-simple
+%{_bindir}/emex-monitor
+%{_bindir}/emex-completions-by-flow
+%{_bindir}/emex-receptions-vs-time
+%{_bindir}/emex-transmissions-vs-time
+%{_bindir}/emex-monitor-live-rx-packets
+%{python3_sitelib}/*
+%doc %{_pkgdocdir}
+%if 0%{?_licensedir:1}
+%dir %{_licensedir}/%{name}
+%license %{_licensedir}/%{name}/COPYING
+%endif

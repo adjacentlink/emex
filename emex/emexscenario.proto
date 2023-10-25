@@ -1,0 +1,227 @@
+/*
+ * Copyright (c) 2022,2023 - Adjacent Link LLC, Bridgewater, New Jersey
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of Adjacent Link LLC nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * See toplevel COPYING for more information.
+ */
+
+syntax = "proto2";
+
+import "emex/common.proto";
+
+/*****************************************************************************
+ *
+ *   The EMulation EXecutor (EMEX) API for interacting with a running EMOE.
+ *
+ *   * Orchestrate Traffic
+ *   * Move and orient platforms, point platform antenna
+ *   * Dynamically configure platform componenets
+ */
+
+
+/*****************************************************************************
+ *   Basis types.
+ */
+enum TrafficProtocolType
+{
+  UDP = 1;
+  TCP = 2;
+  MULTICAST = 3;
+}
+
+
+enum TrafficFlowType
+{
+  SIMPLE = 1;
+  // BURST = 2; // future
+}
+
+
+message SimpleFlow
+{
+  enum Type
+  {
+    PERIODIC = 1;
+    POISSON = 2;
+    JITTER = 3;
+  }
+
+  required Type type = 1;
+  required uint32 size_bytes = 2;
+  required float packet_rate = 3;
+  optional float jitter_fraction = 4 [default=0.0];
+}
+
+
+message StartFlowRequest
+{
+  optional string flow_name = 1;
+  repeated string sources = 2;
+  repeated string destinations = 3;
+  optional TrafficProtocolType protocol_type = 4 [default=UDP];
+  optional uint32 tos = 5;
+  optional uint32 ttl = 6;
+  optional TrafficFlowType flow_type = 7 [default=SIMPLE];
+  optional SimpleFlow simple_flow = 8;
+}
+
+
+message StopFlowRequest
+{
+  optional string flow_name = 1;
+  repeated uint32 flow_ids = 2;
+  repeated string sources = 3;
+  repeated string destinations = 4;
+}
+
+
+message TrafficRequest
+{
+  optional bool list_flows_flag = 1;
+  repeated StartFlowRequest startFlowRequests = 2;
+  repeated StopFlowRequest stopFlowRequests = 3;
+}
+
+
+message FlowEntry
+{
+  required string flow_name = 1;
+  required bool active = 2;
+  required uint32 flow_id = 3;
+  required string source = 4;
+  required string destination = 5;
+  required uint32 tos = 6;
+  required uint32 ttl = 7;
+  required TrafficProtocolType protocol_type = 8;
+  required TrafficFlowType flow_type = 9;
+  optional SimpleFlow simple_flow = 10;
+}
+
+
+message TrafficReply
+{
+  required ResultType result = 1;
+  optional string message = 2;
+  repeated FlowEntry flowEntries = 3;
+}
+
+
+message EmaneEvent
+{
+  message Pathloss
+  {
+    repeated string component_names = 1;
+    required string remote_platform_name = 2;
+    repeated string remote_component_names = 3;
+    required float pathloss = 4;
+  }
+
+  message POV
+  {
+    repeated string component_names = 1;
+    required float latitude = 2;
+    required float longitude = 3;
+    required float altitude = 4;
+    optional float azimuth = 5 [default=0.0];
+    optional float elevation = 6 [default=0.0];
+    optional float speed = 7 [default=0.0];
+    optional float pitch = 8 [default=0.0];
+    optional float roll = 9 [default=0.0];
+    optional float yaw = 10 [default=0.0];
+  }
+
+  message AntennaPointing
+  {
+    repeated string component_names = 1;
+    optional float elevation = 2 [default=0.0];
+    optional float azimuth = 3 [default=0.0];
+  }
+
+  required string platform_name = 1;
+  repeated Pathloss pathlosses = 2;
+  repeated POV pov = 3;
+  repeated AntennaPointing antenna_pointings = 4;
+}
+
+
+message JammingEvent
+{
+  enum Type
+  {
+    JAM_ON = 1;
+    JAM_OFF = 2;
+  }
+
+  message On
+  {
+    required float txpower = 1;
+    required uint32 bandwidth = 2;
+    required uint32 period = 3;
+    required uint32 duty_cycle = 4;
+    repeated uint64 frequencies = 5;
+  }
+
+  required Type type = 1;
+  required string platform_name = 2;
+  repeated string component_names = 3;
+  optional On on = 4;
+}
+
+
+/*****************************************************************************
+ *   The ScenarioClientMessage is an outer wrapper for all EMEX Client
+ *   Scenario messages to the EMOE. The Type field indicates which
+ *   request is populated; only this request will be processed
+ *   by the server, the others are ignored.
+ */
+message ScenarioClientMessage
+{
+  required uint32 sequence = 1;
+  optional TrafficRequest trafficRequest = 2;
+  repeated EmaneEvent emaneEvents = 3; // Location, Pathloss, Antenna Pointing
+  repeated JammingEvent jammingEvents = 4; // Jam On, Jam Off
+}
+
+
+/*****************************************************************************
+ *   The ServerMessage is an outer wrapper for all EMEX Server
+ *   Scenario messages from the EMOE. The Type field indicates which
+ *   optional replies is populated; the contents of the others are
+ *   undefined and should be ignored by the client.
+ *
+ *   The client_sequence number references the sequence number from
+ *   the client request to which this message is a reply.
+ */
+message ScenarioServerMessage
+{
+  required uint32 sequence = 1;
+  required uint32 client_sequence = 2;
+  optional TrafficReply trafficReply = 3;
+}

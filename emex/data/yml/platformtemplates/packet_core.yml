@@ -1,0 +1,12 @@
+name: packet_core
+type: platform_template
+description:
+    A cell system packet core. The packet core serves as
+    the point of traffic ingress/egress between the
+    cell mobile users and the outside world.
+components:
+    h1:
+        type: host
+        traffic_endpoint: true
+        testpoint_publisher: true
+        description: The cell system packet core host type to run.

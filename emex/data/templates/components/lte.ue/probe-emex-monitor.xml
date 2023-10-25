@@ -1,0 +1,7 @@
+<probe-emex-monitor address="0.0.0.0">
+  <probes>
+    <EMEX.Monitor.Tables.RadioModel enable="yes"/>
+    <EMEX.Monitor.Tables.Receive enable="yes"/>
+    <EMEX.Monitor.Tables.TDMA slottabletype="subframetimes" enable="yes"/>
+  </probes>
+</probe-emex-monitor>

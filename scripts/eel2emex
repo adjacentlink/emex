@@ -1,0 +1,404 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+# * Neither the name of Adjacent Link LLC nor the names of its
+#   contributors may be used to endorse or promote products derived
+#   from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# See toplevel COPYING for more information.
+
+import argparse
+from collections import defaultdict
+import math
+import os
+import sys
+
+from yaml import safe_load,safe_dump
+
+
+"""
+Convert an EMANE EEL Scenario file to an EMEX YAML scenario
+file. Merge EEL sentences into an existing YAML file when
+provided. NEM ID to EMEX Platform.Component mapping required.
+"""
+
+
+class EELReader(object):
+    '''
+    EELReader parses an EEL file searching for lines with eventtype
+    listed in the eventlist.
+
+    Each eelfile event line requires format:
+
+    eventtime moduleid eventtype eventarg*
+
+    Blank lines and comment lines, beginning with "#" are permitted.
+
+    Negative eventtimes value are permitted, as is -Inf which will return
+    immediately no matter when encountered.
+
+    eventtimes are expected to be non-decreasing.
+
+    Each iteration returns a tuple (moduleid, eventtype, eventargs*)
+    extracted from the EEL file for the corresponding matching line.
+    '''
+    def __init__(self, eelfile, eventlist):
+        self._events = self._parsefile(eelfile, eventlist)
+
+
+    @property
+    def events(self):
+        return self._events
+
+    @property
+    def init_events(self):
+        return {key:value for key,value in self._events.items()
+                if not math.isfinite(key[0])}
+
+
+    @property
+    def has_dynamic_events(self):
+        return any(filter(lambda x: math.isfinite(x[0]), self._events.keys()))
+
+
+    @property
+    def dynamic_events(self):
+        return {key:value for key,value in self._events.items()
+                if math.isfinite(key[0])}
+
+
+    def _parsefile(self, eelfile, eventlist):
+        events = defaultdict(lambda:[])
+
+        # eelfile must be present
+        if not os.path.exists(eelfile):
+            raise RuntimeError('EEL file "%s" does not exist' % eelfile)
+
+        # process eel lines
+        lineno = 0
+
+        for line in open(eelfile, 'r'):
+            lineno += 1
+
+            line = line.strip()
+
+            # skip blank lines
+            if len(line) == 0:
+                continue
+
+            # skip comment lines
+            if line[0] == '#':
+                continue
+            toks = line.split()
+
+            # skip non-blank lines with too few tokens
+            if len(toks) > 0 and len(toks) < 3:
+                raise RuntimeError('Malformed EEL line %s:%d' %
+                                   (eelfile, lineno))
+
+            eventtime = float(toks[0])
+            moduleid = toks[1]
+            eventtype = toks[2]
+            eventargs = tuple(toks[3:])
+
+            # ignore other events
+            if not eventtype in eventlist:
+                continue
+
+            events[(eventtime,eventtype)].append((moduleid, eventargs))
+
+        return events
+
+
+class EventConverter:
+    def __init__(self, reader, nem_to_pltcmp_map, compact):
+        self._reader = reader
+
+        self._nem_to_pltcmp_map = nem_to_pltcmp_map
+
+        self._compact = compact
+
+        self._plt_cmp_count = defaultdict(lambda: 0)
+
+        for plt,cmp in self._nem_to_pltcmp_map.values():
+            self._plt_cmp_count[plt] += 1
+
+        self._init_appenders = {
+            'location':self.append_init_location,
+            'pathloss':self.append_init_pathloss,
+            'antennaprofile':self.append_init_antennaprofile
+        }
+
+        self._converters = {
+            'location':self.convert_location,
+            'pathloss':self.convert_pathloss,
+            'antennaprofile':self.convert_antennaprofile
+        }
+
+
+    def append_init_location(self, emoe, events):
+        if not events:
+            return
+
+        init_events = [' '.join(event.split()[1:]) for event in events]
+
+        ic = emoe.get('initial_conditions', {})
+        if ic:
+            ic['pov'] = init_events
+        else:
+            emoe['initial_conditions'] = {'pov':init_events}
+        print(f'{emoe["initial_conditions"]["pov"]}')
+        print()
+
+
+    def append_init_pathloss(self, emoe, events):
+        if not events:
+            return
+
+        init_events = [' '.join(event.split()[1:]) for event in events]
+
+        ic = emoe.get('initial_conditions', {})
+        if ic:
+            ic['pathloss'] = init_events
+        else:
+            emoe['initial_conditions'] = {'pathloss': init_events}
+        print(f'{emoe["initial_conditions"]["pathloss"]}')
+        print()
+
+
+    def append_init_antennaprofile(self, emoe, events):
+        if not events:
+            return
+
+        init_events = [' '.join(event.split()[1:]) for event in events]
+        init_events2 = [event.replace('az=','').replace('el=','') for event in init_events]
+
+        ic = emoe.get('initial_conditions', {})
+        if ic:
+            ic['antenna_pointing'] = init_events2
+        else:
+            emoe['initial_conditions'] = {'antenna_pointing': init_events2}
+        print(f'{emoe["initial_conditions"]["antenna_pointing"]}')
+        print()
+
+
+    def convert_location(self, eventtime, eventlist):
+        events = defaultdict(lambda: '')
+
+        for moduleid,eventargs in eventlist:
+            nemid = int(moduleid.split(':')[1])
+
+            plt,cmp = self._nem_to_pltcmp_map[nemid]
+
+            latlonalt = eventargs[1].strip().split(',')
+
+            name = f'{plt}' if self._compact else f'{plt}-{cmp}'
+
+            if self._compact:
+                if events[name] and not events[name] == latlonalt:
+                    print(f'Found different locations for two components of platform {name} '
+                          f'at time {eventtime}. Quitting',
+                          file=sys.stderr)
+
+                    exit(1)
+
+            events[name] = latlonalt
+
+        return [f"pov {name} {' '.join(latlonalt)}"
+                for name,latlonalt in events.items()]
+
+
+    def convert_pathloss(self, eventtime, eventlist):
+        events = []
+
+        for moduleid,eventargs in eventlist:
+            eventtoks = ['pathloss']
+
+            nemid = int(moduleid.split(':')[1])
+
+            plt,cmp = self._nem_to_pltcmp_map[nemid]
+
+            name = f'{plt}' \
+                if self._compact and self._plt_cmp_count[plt] == 1 \
+                   else f'{plt}-{cmp}'
+
+            eventtoks.append(name)
+
+            for eventarg in eventargs:
+                # nem:101,111
+                print(eventarg)
+                remote_nemid,pathloss = eventarg[4:].split(',')
+
+                rplt,rcmp = self._nem_to_pltcmp_map[int(remote_nemid)]
+
+                rname = f'{rplt}' \
+                    if self._compact and self._plt_cmp_count[rplt] == 1 \
+                       else f'{rplt}-{rcmp}'
+
+                eventtoks.append(f'{rname}:{pathloss}')
+
+            events.append(' '.join(eventtoks))
+
+        return events
+
+
+    def convert_antennaprofile(self, eventtime, eventlist):
+        events = []
+
+        for moduleid,pointing in eventlist:
+            nemid = int(moduleid.split(':')[1])
+
+            plt,cmp = self._nem_to_pltcmp_map[nemid]
+
+            _,az,el = pointing[0].strip().split(',')
+
+            name = f'{plt}' \
+                if self._compact and self._plt_cmp_count[plt] == 1 \
+                else f'{plt}-{cmp}'
+
+            events.append(f'antennaprofile {name} az={az} el={el}')
+
+        return events
+
+
+    def to_dict(self, input_yaml={}):
+        width = 80
+
+        scenario = defaultdict(lambda:[])
+
+        description = input_yaml.get('description','eel2emex-generated').replace('\n', ' ')
+
+        output = {
+            'name': input_yaml.get('name','eel2emex-generated'),
+            'description': description,
+            'emoe': input_yaml.get('emoe',{}),
+            'scenario': {}
+        }
+
+        # massage init (T=-inf) events into emoe initial conditions
+        for (eventtime,eventtype),eventlist in sorted(self._reader.init_events.items()):
+            converted_events = self._converters[eventtype](eventtime, eventlist)
+
+            self._init_appenders[eventtype](output['emoe'], converted_events)
+
+        # then process scenario events, first group events by eventtime
+        for (eventtime,eventtype),eventlist in sorted(self._reader.dynamic_events.items()):
+            scenario[float(eventtime)].extend(self._converters[eventtype](eventtime, eventlist))
+
+        # and then arrange them into the scenario
+        for eventtime,eventlist in scenario.items():
+            output["scenario"][eventtime] = []
+
+            if input_yaml and eventtime in input_yaml.get('scenario',{}):
+                lines = list(
+                    filter(lambda x: len(x.strip())>0,
+                           input_yaml["scenario"][eventtime].split('\n')))
+
+                output["scenario"][eventtime].extend(lines)
+
+            output['scenario'][eventtime].extend(eventlist)
+
+            width = max(width, max(map(len,output['scenario'][eventtime])))
+
+        return width,output
+
+
+parser = argparse.ArgumentParser( \
+            prog='eel2emex',
+            description='Convert an EMANE EEL file to an EMEX YAML file.',
+            formatter_class=argparse.RawDescriptionHelpFormatter)
+
+parser.add_argument('--compact',
+                    action='store_true',
+                    default=False,
+                    help='''Attempt to produce the least verbose EMEX
+                    file possible. For example, EMEX will a allow a
+                    platform name to (unambiguously) specify a
+                    platform.component when a platform contains only
+                    one component. Further, if a platform contains
+                    multiple components but all of the individual
+                    component event arguments agree (for example all
+                    of the platform's NEM locations are always the
+                    same) the individual location events can be
+                    combined into a single event for the parent
+                    platform. When disabled, the full
+                    platform.component name is used everywhere.''')
+parser.add_argument('--indent',
+                    type=int,
+                    default=4,
+                    help='''Indentation to use in output file.''')
+parser.add_argument('--yamlfile',
+                    type=str,
+                    default=None,
+                    help='''Existing EMEX YAML file into which the EEL
+                    file events will be merged.''')
+parser.add_argument('eelfile',
+                    metavar='EELFILE',
+                    help='''EMANE EEL file to translate.''')
+parser.add_argument('mapfile',
+                    metavar='MAPFILE',
+                    help='''
+                    Map file of NEM IDs to EMEX Platform.Component
+                    names.  The file should contain one mapping per
+                    line with format "NEMID Platform.Component". The
+                    Map file must contain all of the NEM IDs found in
+                    the EEL file.
+                    ''')
+parser.add_argument('outputfile',
+                    metavar='OUTPUTFILE',
+                    help='''The output YAML file.''')
+
+args = parser.parse_args()
+
+if not os.path.isfile(args.mapfile):
+    print(f'Bad MAPFILE "{args.mapfile}". Quitting', file=sys.stderr)
+    exit(1)
+
+if not os.path.isfile(args.eelfile):
+    print(f'Bad EELFILE "{args.eelfile}". Quitting', file=sys.stderr)
+    exit(1)
+
+map_lines = [line.split()
+             for line in open(args.mapfile).readlines()
+             if line.strip()]
+
+nem_to_pltcmp_map = {int(nemid):(plt_cmp.split('.')[0], plt_cmp.split('.')[1])
+                     for nemid,plt_cmp in map_lines}
+
+input_yaml = safe_load(open(args.yamlfile)) if args.yamlfile else {}
+
+converter = \
+    EventConverter(
+        EELReader(args.eelfile, ['location','pathloss','antennaprofile']),
+        nem_to_pltcmp_map,
+        args.compact)
+
+with open(args.outputfile, 'w') as fd:
+    width, output_yaml = converter.to_dict(input_yaml)
+
+    safe_dump(output_yaml, stream=fd, width=width, indent=args.indent)

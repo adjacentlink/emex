@@ -1,0 +1,8 @@
+<probe-srslte-ue address="127.0.0.1" port="47100">
+  <probes>
+    <SRSLTE.UE.Tables.Counts enable="no"/>
+    <SRSLTE.UE.Tables.MAC enable="no"/>
+    <SRSLTE.UE.Tables.PHY enable="no"/>
+    <SRSLTE.UE.Tables.Upper enable="no"/>
+  </probes>
+</probe-srslte-ue>

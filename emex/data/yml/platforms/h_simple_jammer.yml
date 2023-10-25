@@ -1,0 +1,9 @@
+from:
+    template: jammer
+    h1: simple_jammer
+
+name: h_simple_jammer
+type: platform
+description:
+    Single Platform Container for running an instance of
+    emane-jammer-simple-service to emulate a simple jammer.

@@ -1,0 +1,17 @@
+<otestpoint id="${emex.hostname}" discovery="0.0.0.0:8881" publish="0.0.0.0:8882">
+  <probe configuration="probe-emex-monitor.xml">
+    <python module="otestpoint.emex.monitor" class="Monitor"/>
+  </probe>
+  <probe configuration="probe-emane-physicallayer.xml">
+    <python module="otestpoint.emane.physicallayer" class="PhysicalLayer"/>
+  </probe>
+  <probe configuration="probe-emane-rfpipe.xml">
+    <python module="otestpoint.emane.rfpipe" class="RFPipe"/>
+  </probe>
+  <probe configuration="probe-emane-virtualtransport.xml">
+    <python module="otestpoint.emane.virtualtransport" class="VirtualTransport"/>
+  </probe>
+  <probe configuration="otestpoint-probe-mgen.xml">
+    <python module="otestpoint.mgen.flows" class="Flows"/>
+  </probe>
+</otestpoint>
