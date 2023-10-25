@@ -1,0 +1,26 @@
+# autogen and configure and make
+*__pycache__
+Makefile.in
+aclocal.m4
+autom4te.cache/
+compile
+config.guess
+config.sub
+configure
+install-sh
+ltmain.sh
+m4/
+missing
+emex*.pdf
+Makefile
+config.log
+config.status
+emex/*_pb2.py
+emex/emexd.xml
+libtool
+build/
+setup.py
+
+# debs
+.debbuild/
+emex-*.tar.gz
