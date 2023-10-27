@@ -1,70 +1,18 @@
----
-title: EMEX
-geometry: margin=1in
-header-includes:
-    - \usepackage{fancyhdr}
-    - \pagestyle{fancy}
----
-
-\begin{center}
-\normalsize
-
-Adjacent Link LLC\\
-9 Kiser Lane\\
-Bridgewater, NJ 08807\\
-\url{http://adjacentlink.com}
-
-\vspace{.5cm}
-Version: 0.6.1
-\end{center}
-
-Copyright (c) 2022,2023 - Adjacent Link LLC, Bridgewater, New Jersey
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-* Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in
-  the documentation and/or other materials provided with the
-  distribution.
-* Neither the name of Adjacent Link LLC nor the names of its
-  contributors may be used to endorse or promote products derived
-  from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
-
-\newpage
-
 # EMEX
 
-The EMulation EXecutor (EMEX) project will simplifies and automates
-the execution of EMANE emulations on one or more servers. An EMEX
-client interacts with a server via the EMEXD API and Scenario API to
-run one or more (concurrent) emulations --- up to the limits of the
-server's resources.  Both APIs are defined in a Google protocol buffer
-description file [emex/emexd.proto](emex/emexd.proto) and
+The EMulation EXecutor (EMEX) project aims to simplify and automate
+EMANE emulation execution. An EMEX client interacts with a server via
+the EMEXD API and Scenario API to run one or more (concurrent)
+emulations --- up to the limits of the server's resources.  Both APIs
+are defined in a Google protocol buffer description file
+[emex/emexd.proto](emex/emexd.proto) and
 [emex/emexscenario.proto](emex/emexscenario.proto).
 
 EMEX sees an EMANE emulation as two distinct parts, the
 Electro-Magnetic Operating Environment (EMOE) and the Scenario.  The
 EMOE describes the participants of the emulation, the Platforms that
 model physical RF emitting/receiving entities (radios, vehicles,
-airplanes, towers, etc) and their configurations. The Scenario
+airplanes, towers, satellites, etc) and their configurations. The Scenario
 describes the dynamic, time sequenced events of the emulation,
 especially platform motion, antenna pointing and communication traffic
 flows. Using the analogy of a chess game, the EMOE sets up the board
@@ -74,14 +22,14 @@ server.
 
 This project contains the EMEX software.
 
- * The EMEX Daemon (`emexd`) which runs on an EMEX server and directs
+ * The EMEX Daemon (`emexd`) which runs on an EMEX server and manages
    EMOEs on behalf of a client.
  * An example EMEX Client (`emex`) which can either run an emulation
    based on a YAML file definition, or interact with the Daemon from
    a shell to create an EMOE and interact with it on the fly.
  * The EMEX Container Daemon (`emexcontainerd`) which resides within
    each EMOE container instance and orchestrates the associated EMOE
-   applications in conjunction with it's controlling `emexd`
+   applications in conjunction with its controlling `emexd`
  * A Model Repository containing standardized EMANE waveform model
    configuration and platform type definitions.
 
@@ -92,9 +40,9 @@ This project contains the EMEX software.
 EMOEs are constructed from EMEX Types. There are currently two:
 
 A *PlatformType* notionally maps to a physical entity in the EMOE ---
-a manpack radio, a terrestrial or airborne vehicle or a communications
+a handheld radio, a terrestrial or airborne vehicle or a communications
 tower (for example). A *PlatformType* may contain one or more Spectrum
-Dependent System (SDS) sub-components which move together when the
+Dependent Systems (SDS) sub-components which move together when the
 containing *PlatformType* moves. Each SDS is modeled by a
 *WaveformType* which maps one-to-one with an underlying EMANE Radio
 Model. Each *PlatformType* includes its *WaveformTypes* as
@@ -117,7 +65,7 @@ Platform's orientation - see the description of the
 An *Antenna* can be added to the EMOE from an *AntennaType* by specifying
 values for its parameters - for example a sector antenna can be built
 by defining the antenna's horizonal and vertical beam width. Each
-defined *Antenna* must be given a unique name, and this name is used
+defined *Antenna* must be given a unique name and this name is used
 to assign the antenna to a particular *Component*. All SDSs default to an ideal
 omni-directional antenna when none is specified.
 
@@ -130,14 +78,14 @@ components.
 At startup, the EMEX client queries the server for available types from the
 Model Repository via the `ModelTypesRequest` message.
 
-In the EMEXD API, an EMOE instance is the fundamental transactional
+In the EMEXD API an EMOE instance is the fundamental transactional
 element between clients and servers. Each EMOE is in one of nine
 states:
 
 ![EMOE State Diagram](doc/emoe_state_diagram.png){#emex-state-diagram}
 
 
-1. QUEUED: The EMOE enters the QUEUED state on reception
+1. QUEUED: emexd place an EMOE into the QUEUED state on reception
            of a valid `StartEmoeRequest` message
            for an EMOE that can be provisioned with current
            resources. The request is enqueued to a separate
@@ -153,10 +101,10 @@ states:
 
 3. STARTING: After connecting to the controlling emexd instance,
              `emexcontainerd` orchestrates the intantiation of the
-             EMOE container nodes and applications that comprise
-             the scenario. The STARTING state spans the duration of
-             this process - from container launch to all
-             applications ready.
+             EMOE nodes and applications that comprise the
+             scenario within the EMOE container. The STARTING state
+             spans the duration of this process - from container
+             launch to all applications ready for scenario input.
 
 4. RUNNING: The EMOE enters the RUNNING state once of the emulation
             applications are up and running and the EMOE is ready
@@ -167,8 +115,8 @@ states:
              EMOE. This is not currently implemented.
 
 6. STOPPING: An EMOE enters the STOPPING state triggered by a
-             `StopEmoeRequest`. During this stopping state, the EMOEs
-             emulation applications are halted and the EMOE container
+             `StopEmoeRequest`. During this stopping state, the EMOE
+             applications are halted and the EMOE container
              is stopped and removed. The EMOE STOPPING state is
              signaled by `StopEmoeReply[result=PASS]` or by an
              `EmoeStateTransitionEvent[state=STOPPING] in case of an
@@ -184,26 +132,23 @@ states:
 8. FAILED: An EMOE enters the FAILED state from the QUEUED state
            when emexd is unable to start the EMOEs container.
 
-\bigskip
 
 Once an EMOE reaches the RUNNING state, it opens control and monitor
 endpoints for control and monitoring by the client. These *accessors*
-endpoints are signaled from the Daemon to the Client in the EMEXD
-reply messages. The `emexcontainerd` endpoint is the access point for
-controlling Platform traffic flows, position, antenna pointing and
-pair-wise pathloss. These manipulations are performed vie the Scenario
-API messages defined by emexscenario.proto.
+endpoints are signaled from the Daemon to the Client in
+`listEmoesReply` message. The `emexcontainerd` endpoint is the access
+point for controlling Platform traffic flows, position, antenna
+pointing and pair-wise pathloss. These manipulations are performed via
+the Scenario API messages defined by emexscenario.proto.
 
 The EMOE lifecycle then is characterized by an initial transaction to
 start the EMOE via the EMEXD API, a period of runtime manipulations
-via the Scenario API, and finally stopping the EMOE again via the
+via the Scenario API and finally stopping the EMOE again via the
 EMEXD API. The following diagram illustrates this sequence
 orchestrated by the `emex run` command discussed later.
 
 ![EMOE Lifecycle Sequence](doc/emex-synchronous-emulation-sequence.png){#emex-lifecycle-sequence}
 
-
-\pagebreak
 
 ## Getting Started
 
@@ -211,14 +156,13 @@ The current release includes `emexd` and `emexcontainerd` and the
 sample client, `emex`. The `emex shell` command opens a shell to
 dynamically interact with an `emexd` instance to start and stop
 EMOEs. It will eventually be updated to interface with individual
-EMOEs, over the Scenario API, enabling full runtime life-cycle
-control.
+EMOEs over the Scenario API and direct runtime scenario events.
 
-The `emex run` command executes a static EMOE/Scenario based on the
-contents of a user provided EMEX YAML file taken as input. The YAML
-file specifies the platforms that comprise the EMOE, their initial
-conditions (optional) and time-based commands that define the
-scenario's runtime traffic flows and mobility.
+The `emex run` command executes an EMANE emulation from a user
+provided EMEX YAML file taken as input. The YAML file specifies the
+emulation platforms, their initial conditions (optional)
+and time-based commands that define the scenario's runtime traffic
+flows and mobility.
 
 ### emexd
 
@@ -229,15 +173,10 @@ command line argument or be placed at /etce/emexd.xml. The
 configuration file is not required and the values listed are the
 defaults.
 
-\medskip
 
 ---
 
 ```XML
-<!-- Example emexd configuration file showing defaults. Pass to emexd
-     with the -c option or place it at /etc/emexd.xml. -c option
-     takes precedence over /etc/emexd.xml. emexd runs with the
-     default values when no configuration file is provided. -->
 <!-- Example emexd configuration file showing defaults.  Pass to emexd
      with the -c option or place it at /etc/emexd.xml. -c option
      takes precedence over /etc/emexd.xml. emexd runs with the
@@ -300,7 +239,6 @@ defaults.
 
 ---
 
-\medskip
 
 
 The `-h` option lists `emexd` command line options. `emexd` runs in
@@ -342,15 +280,15 @@ options:
 10:54:59.221 INFO: main thread waiting
 ```
 
-While the Daemon and Client may be executed together on the same host,
-the primary use case is to run the Daemon on a headless, CPU rich
-server with Clients connecting from other hosts.
+emexd (server) and emex (client) are written generally to run on separate
+hosts where (primary use case) the server is a headless, CPU rich machine.
+Frequently though they are run on the same machine.
 
 `emexd` listens for clients on port 49901 by default. Additionally,
 each EMOE container opens endpoints from a pool of ports allocated to
 the controlling `emexd` via configuration (`allowed-host-ports`) - the
 default range for these is [9000, 9999]. Currently each EMOE requires
-4 ports.
+a minimum of 4 ports.
 
 Firewall rules may need to be changed to allow client/server
 transactions on these ports. See [Troubleshooting Notes](#troubleshooting-notes)
@@ -361,11 +299,11 @@ later.
 
 ### emex run
 
-`"emex run"` runs an EMOE and Scenario as described by a user provided
-EMEX YAML input file. After the `name` and `description` elements for
-naming and describing the scenario, the YAML file contains two main
-sections. Follow along with the RF Pipe YAML example below when reading
-through the format description.
+`"emex run"` runs the emulation described by the EMEX YAML input
+file. After the `name` and `description` elements for naming and
+describing the scenario, the YAML file contains two main
+sections. Follow along with the RF Pipe YAML example below when
+reading through the format description.
 
 The `emoe` section contains up to three subsections. The `platforms`
 subsection, the only one required, names the platforms that comprise
@@ -383,7 +321,7 @@ as `omni_GAINVALUE`, see the example below.
 
 Use the optional `initial_conditions` subsection to assign initial position, orientation and velocity (`pov`),
 pairwise `pathloss` or `antenna_pointing` (azimuth and elevation) to
-any of the platforms. The definitions of these entries follows
+any of the platform components. The definitions of these entries follows
 closely from the underlying [EMANE meaning for these values.](https://github.com/adjacentlink/emane/wiki/EEL-Generator)
 The format for each of the initial condition entries is described later in the
 [YAML Scenario Sentence Formats](#yaml-scenario-sentence-formats) section. The initial conditions
@@ -403,17 +341,13 @@ the `pov` values are optional but, when specified, are
 used to calculate propagation delay between platforms. Propagation
 delay is 0 otherwise.
 
-The `scenario` section defines the time-based events that determine
-the dynamic life-cycle elements of the scenario. Each event is headed
-by the scenario time at which it is issued with reference to T=0 as
-the time the EMOE starts running. The types of events that can
-be specified in the `scenario` block include the same ones that
-were used for `initial_conditions`, (`pov`, `pathloss` and `antenna_pointing`),
-as well as traffic events (`flow_on`, `flow_off`) and jamming
+The `scenario` section defines the time-based scenario events. Each event
+starts with the scenario time of execution with reference to T=0 as
+the time the EMOE starts running. The `scenario` block can include the `initial_conditions`
+event types as well as traffic events (`flow_on`, `flow_off`) and jamming
 events for jammer platforms (`jam_on`, `jam_off`). [YAML Scenario Sentence Formats](#yaml-scenario-sentence-formats)
 details the format of each event.
 
-\pagebreak
 
 ---
 
@@ -445,7 +379,7 @@ description: |
     rfpipe-002.  rfpipe-004 is pointed towards rfpipe-003, which will
     not receive it (since it is pointing north).
 
-    T=20 set all nodes to transmit multicast to all other nodes times
+    T=20 set all nodes to transmit multicast to all other nodes 5 times
          per second with randomized transmit times.
 
     T=40 start a unicast traffic flow from rfpipe-001 to rfpipe-002 and
@@ -531,7 +465,7 @@ emoe:
 
 scenario:
     20.0: |
-        flow_on name=SA source=rfpipe* destination=rfpipe* proto=multicast ttl=4 periodic 5.0 512
+        flow_on name=SA source=rfpipe-* destination=rfpipe-* proto=multicast ttl=4 periodic 5.0 512
     40.0: |
         flow_on name=flow1 source=rfpipe-001 destination=rfpipe-002 proto=udp periodic 10.0 256
         antenna_pointing rfpipe-001  180.0 0.0
@@ -642,10 +576,10 @@ the table values.
    ...
 ```
 
-`emex run` requires two arguments, a unique EMOE name (the underlying
-Docker container executes with this name) and the input YAML file.
-The example below also shows the monitor option needed to run the
-EMEX monitor.
+`emex run` requires two arguments, a unique EMOE tag (the underlying
+Docker container name is formed from this tag) and the input YAML
+file.  The example below also shows the monitor option to run the EMEX
+monitor.
 
 ---
 
@@ -717,7 +651,6 @@ emane-spectrum-analyzer GUI.
 
 ---
 
-\pagebreak
 
 The captured statistic data is written, by default, to a timestamped
 directory in the current working directory (format
@@ -766,7 +699,7 @@ sqlite> select * from mgen_rx;
 The `emane-node-view` assessor can be used to monitor node positions
 from a web-browser while the EMOE is running:
 
-![EMANE Node View](doc/emane-node-view-eng.png)
+![EMANE Node View](doc/emane-node-view-rfpipe.png)
 
 
 ### emex shell
@@ -1166,40 +1099,15 @@ layer has a common set of counters and averages for evaluating the
 responsiveness of the layer processing. The `apiqueuemetrics` table
 presents these metrics for the radio model layer.
 
-------------------------------------------------------------------------------------
-Label                     Description
-------------------        ----------------------------------------------------------
-`time`                    The report interval timestamp.
-
-`component`               The hostname of the reporting platform component.
-
-`num_queued`              The number of events added to the queue during the
-                          interval.
-
-`num_processed`           The number of events processed/dequeued during the interval.
-
-`avg_queue_depth`         The average depth of the event queue over the interval
-                          at the time an event is serviced (1.0 is best case).
-
-`avg_queue_wait`          For events processed during the interval, the average
-                          time spent in the queue (`dequeue_time` - `enqueue_time`).
-						  In microseconds.
-
-`num_timer_events`        The number of timer events handled during the interval.
-                          Note - some radio models do not require timers, so
-						  this value and the following latency values will always
-						  be 0.
-
-`avg_timer_latency`       The average time past the scheduled wake up time
-                          that a timer event is dequeued for all timer
-                          events handled during the interval. In microseconds.
-
-`avg_timer_latency_ratio` The same as `avg_timer_latency` except that each
-                          latency is divided by the duration of the timer
-						  request of the corresponding event. This permits
-						  monitoring the heuristic observation that timer
-						  latency may depend on timer duration.
-------------------------------------------------------------------------------------
+* *time*: The report interval timestamp.
+* *component*: The hostname of the reporting platform component.
+* *num_queued*: The number of events added to the queue during the interval.
+* *num_processed*: The number of events processed/dequeued during the interval.
+* *avg_queue_depth*: The average depth of the event queue over the interval at the time an event is serviced (1.0 is best case).
+* *avg_queue_wait*: For events processed during the interval, the average time spent in the queue (`dequeue_time` - `enqueue_time`). In microseconds.
+* *num_timer_events*: The number of timer events handled during the interval. Note - some radio models do not require timers, so this value and the following latency values will always be 0.
+* *avg_timer_latency*: The average time past the scheduled wake up time that a timer event is dequeued for all timer events handled during the interval. In microseconds.
+* *avg_timer_latency_ratio*: The same as `avg_timer_latency` except that each latency is divided by the duration of the timer request of the corresponding event. This permits monitoring the heuristic observation that timer latency may depend on timer duration.
 
 
 ### mgen_rx
@@ -1208,60 +1116,20 @@ The `mgen_rx` table tabulates statistics for packets and bytes
 received during the report interval at each platform component and
 distinguished by traffic flow.
 
-------------------------------------------------------------------------------------
-Label                 Description
-------------------    --------------------------------------------------------------
-`time`                The report interval timestamp.
-
-`source`              The host name of the platform component transmitting the
-                      flow.
-
-`receiver`            The host name of the receiving platform component.
-
-`destination`         The IP destination of the traffic flow. For
-                      unicast (udp/tcp proto) flows, this will be
-					  the hostname of the receiving platform component.
-					  For multicast, this will be the receiving multicast
-					  address.
-
-`flow`                A traffic flow identifier. EMEX assigns these internally. For
-                      unicast flows each flow number identifies a
-                      transmitter and receive pair uniquely (though multiple flow
-					  are possible beteen any such pair). For multicast flows,
-					  the flow number uniquely identifies and transmitter
-					  and multicast destination address.
-
-`min_sequence`        Traffic flow packets are labeled with unique
-                      incrementing sequence numbers. This is the
-					  minimum sequence number received during the interval.
-					  min_sequence will be reported with a value of `-1`
-					  in an interval when no packets are received
-					  (packets == 0).
-
-`max_sequence`        Traffic flow packets are labeled with unique
-                      incrementing sequence numbers. This is the
-					  maximum sequence number received during the interval.
-					  max_sequence will be reported with a value of `-1`
-					  in an interval when no packets are received
-					  (packets == 0).
-
-`protocol`            The protocol type of the flow - `udp`, `tcp` or `multicast`.
-
-`packets`             Total number of packets received during the interval.
-
-`bytes`               Total bytes received during the interval.
-
-`dup_packets`         Total number of packets received in duplicate during
-                      the interval
-
-`dup_bytes`           Total number of bytes received in duplicate during
-                      the interval.
-
-`avg_latency`         Average packet latency for packets received
-                      during the interval.
-
-`completion`          Packet completion rate during the interval.
-------------------------------------------------------------------------------------
+* *time*: The report interval timestamp.
+* *source*: The host name of the platform component transmitting the flow.
+* *receiver*: The host name of the receiving platform component.
+* *destination*: The IP destination of the traffic flow. For unicast (udp/tcp proto) flows, this will be the hostname of the receiving platform component. For multicast, this will be the receiving multicast address.
+* *flow*: A traffic flow identifier. EMEX assigns these internally. For unicast flows each flow number identifies a transmitter and receive pair uniquely (though multiple flow are possible beteen any such pair). For multicast flows, the flow number uniquely identifies and transmitter and multicast destination address.
+* *min_sequence*: Traffic flow packets are labeled with unique incrementing sequence numbers. This is the minimum sequence number received during the interval. min_sequence will be reported with a value of `-1` in an interval when no packets are received (packets == 0).
+* *max_sequence*: Traffic flow packets are labeled with unique incrementing sequence numbers. This is the maximum sequence number received during the interval. max_sequence will be reported with a value of `-1` in an interval when no packets are received (packets == 0).
+* *protocol*: The protocol type of the flow - `udp`, `tcp` or `multicast`.
+* *packets*: Total number of packets received during the interval.
+* *bytes*: Total bytes received during the interval.
+* *dup_packets*: Total number of packets received in duplicate during the interval
+* *dup_bytes*: Total number of bytes received in duplicate during the interval.
+* *avg_latency*: Average packet latency for packets received during the interval.
+* *completion*: Packet completion rate during the interval.
 
 
 
@@ -1271,39 +1139,26 @@ The `mgen_tx` table tabulates statistics for packets and bytes
 transmitted during the report interval at each platform component and
 distinguished by traffic flow.
 
-------------------------------------------------------------------------------------
-Label                 Description
-------------------    --------------------------------------------------------------
-`time`                The report interval timestamp.
-
-`source`              The host name of the platform component transmitting the
+* *time*:                The report interval timestamp.
+* *source*:              The host name of the platform component transmitting the
                       flow.
-
-`destination`         The IP destination of the traffic flow. For
+* *destination*:         The IP destination of the traffic flow. For
                       unicast (udp/tcp proto) flows, this will be
 					  the hostname of the receiving platform component.
 					  For multicast, this will be the receiving multicast
 					  address.
-
-`flow`                A flow number uniquely identifying the traffic flow.
+* *flow*:                A flow number uniquely identifying the traffic flow.
                       EMEX assigns these internally. For unicast flows.
-
-`min_sequence`        Traffic flow packets are labeled with unique
+* *min_sequence*:        Traffic flow packets are labeled with unique
                       incrementing sequence numbers. This is the
 					  minimum sequence number transmitted during the interval.
-
-`max_sequence`        Traffic flow packets are labeled with unique
+* *max_sequence*:        Traffic flow packets are labeled with unique
                       incrementing sequence numbers. This is the
 					  maximum sequence number transmitted during the interval.
-
-`protocol`            The protocol type of the flow - `udp`, `tcp` or `multicast`.
-
-`source_port`         The transmit port number of the flow.
-
-`packets`             Total number of packets sent during the interval.
-
-`bytes`               Total bytes transmitted during the interval.
-------------------------------------------------------------------------------------
+* *protocol*:            The protocol type of the flow - `udp`, `tcp` or `multicast`.
+* *source_port*:         The transmit port number of the flow.
+* *packets*:             Total number of packets sent during the interval.
+* *bytes*:               Total bytes transmitted during the interval.
 
 
 ### rfsignaltable
@@ -1317,38 +1172,14 @@ The `rfsignaltable` records averages for various quantities for
 receive packets processed during the interval distinguished by
 transmitter (`remote`).
 
-------------------------------------------------------------------------------------
-Label                 Description
-------------------    --------------------------------------------------------------
-`time`                The report interval timestamp.
-
-`component`           The hostname of the reporting (receiving) platform component.
-
-`remote`              The hostname of the transmitting platform component.
-
-`samples`             The number of receive packets processed during the interval.
-
-`avg_noise_floor_dBm` The average noise floor overlapping the time and frequency
-                      extents of receive packets processed during the interval.
-					  Note, this is the same as the configured receive sensitivity
-				      as determined by the [configured receive bandwidth and noise figure](https://github.com/adjacentlink/emane/wiki/Physical-Layer-Model#receive-power-calculation).
-					  It is included for convenience and will be constant.
-
-`avg_rx_power_dBm`    The average receive power of receive packets processed
-                      during the interval.
-
-`avg_sinr_dB`         The average SINR of receive
-                      packets processed during the interval. This is
-                      the packet receive power less the residual noise
-                      of time frequency bins overlapping the packet's
-                      extent.
-
-`avg_inr_dB`          The average interference to noise ratio for time/frequency
-                      bins overlapping receive packets processed during the interval.
-					  This is a measure of interfering noise above the noise floor
-					  overlapping with receve packets processed. In the absence
-					  of interference it will be 0.0.
-------------------------------------------------------------------------------------
+* *time*: The report interval timestamp.
+* *component*: The hostname of the reporting (receiving) platform component.
+* *remote*: The hostname of the transmitting platform component.
+* *samples*: The number of receive packets processed during the interval.
+* *avg_noise_floor_dBm*: The average noise floor overlapping the time and frequency extents of receive packets processed during the interval. Note, this is the same as the configured receive sensitivity as determined by the [configured receive bandwidth and noise figure](https://github.com/adjacentlink/emane/wiki/Physical-Layer-Model#receive-power-calculation). It is included for convenience and will be constant.
+* *avg_rx_power_dBm*: The average receive power of receive packets processed during the interval.
+* *avg_sinr_dB*: The average SINR of receive packets processed during the interval. This is the packet receive power less the residual noise of time frequency bins overlapping the packet's extent.
+* *avg_inr_dB*: The average interference to noise ratio for time/frequency bins overlapping receive packets processed during the interval. This is a measure of interfering noise above the noise floor overlapping with receve packets processed. In the absence of interference it will be 0.0.
 
 
 ### slottiminghistogram
@@ -1367,28 +1198,14 @@ the histogram tallies will shift later as load increases. The
 table can help to monitor for a threshold limit to emulation size
 and/or traffic load.
 
-------------------------------------------------------------------------------------
-Label                 Description
-------------------    --------------------------------------------------------------
-`time`                The report interval timestamp.
-
-`component`           The hostname of the reporting platform component.
-
-`type`                The slot type - transmit (TX), receive (RX) or combined
-                      transmit and receive (TXRX) - LTE, for example, processes
-					  all transmissions and receptions in aggregate on each
-					  slot.
-
-`.25`                 Processing completes within the first quarter of the slot.
-
-`.50`                 Processing completes within the second quarter of the slot.
-
-`.75`                 Processing completes within the third quarter of the slot.
-
-`1.0`                 Processing completes within the fourth quarter of the slot.
-
-`>1.0`                Processing time completes after completion of the slot.
-------------------------------------------------------------------------------------
+* *time*: The report interval timestamp.
+* *component*: The hostname of the reporting platform component.
+* *type*: The slot type - transmit (TX), receive (RX) or combined transmit and receive (TXRX) - LTE, for example, processes all transmissions and receptions in aggregate on each slot.
+* *.25*: Processing completes within the first quarter of the slot.
+* *.50*: Processing completes within the second quarter of the slot.
+* *.75*: Processing completes within the third quarter of the slot.
+* *1.0*: Processing completes within the fourth quarter of the slot.
+* *>1.0*: Processing time completes after completion of the slot.
 
 
 ## Troubleshooting Notes
