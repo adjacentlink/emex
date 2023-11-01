@@ -21,6 +21,10 @@ libtool
 build/
 setup.py
 
+
+# docker
+docker/patches.tgz
+
 # debs
 .debbuild/
 emex-*.tar.gz

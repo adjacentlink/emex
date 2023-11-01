@@ -85,7 +85,7 @@ class Plugin(BasePlugin):
     DEFAULT_ALLOWED_MAX_HOST_PORT = 9999
 
     # Default docker image used for running EMOEs
-    DEFAULT_DOCKER_IMAGE = 'emex:0.6.1'
+    DEFAULT_DOCKER_IMAGE = 'emex:0.6.3'
 
     # Defaultl log level for the container daemon
     DEFAULT_EMEXCONTAINERD_LOGLEVEL = 'info'

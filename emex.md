@@ -946,16 +946,16 @@ a `flow_stop` events.
 
 ```
     format:   [name=NAME] source=SOURCE destination=DESTINATION proto=PROTO \
-	          [ttl=TTL] [TOS=tos] \
-			  PATTERN
+              [ttl=TTL] [TOS=tos] \
+              PATTERN
 
               where:
               PROTO is one of {udp,tcp,multicast}
 
               PATTERN is one of:
-                periodic - rate_msgs_per_second size_bytes
-                poission - average_rate_msgs_per_second size_bytes
-                jitter   - rate_msgs_per_second size_bytes jitter_fracion
+                 periodic - rate_msgs_per_second size_bytes
+                 poission - average_rate_msgs_per_second size_bytes
+                 jitter   - rate_msgs_per_second size_bytes jitter_fracion
 
               jitter_fraction is in range [0.0, 0.5]
 
@@ -963,10 +963,10 @@ a `flow_stop` events.
 	          second, 512 bytes long. Randomize the message transmit times.
 
               flow_on name=SA source=rfpipe* destination=rfpipe* proto=multicast ttl=4 \
-			          jitter 5.0 512 0.5
+                      jitter 5.0 512 0.5
 
     example2: Start a periodic UDP flow from rfpipe-001 to rfpipe-002 of 10 messages
-	          pre second, 256 bytes long.
+              per second, 256 bytes long.
 
               flow_on name=flow1 source=rfpipe-001 destination=rfpipe-002 proto=udp \
                       periodic 10.0 256
@@ -986,9 +986,9 @@ as an argument. The name must be one indiciated in a prior `flow_on` event.
 ```
     format:  flow_off name=NAME
 
-	example: Stop the SA flows set up above.
+    example: Stop the SA flows set up above.
 
-	         flow_off name=SA
+             flow_off name=SA
 ```
 
 ### pov
@@ -1002,7 +1002,7 @@ and velocity. Only the position values are required.
    example: Place rfpipe-002 near four corners (Utah, Colorado,
             New Mexico, Arizona)
 
-			pov rfpipe-002 37.000 -109.045 3.0
+            pov rfpipe-002 37.000 -109.045 3.0
 ```
 
 ### pathloss
@@ -1035,7 +1035,10 @@ profile ID to the target platform.
 ```
     format: antenna_pointing PLATFORM[-COMPONENT] azimuth_deg elevation_deg
 
-	example: rfpipe-001 45.0 -20.0
+    example: Set rfpipe-001 antenna pointing to 45 degrees azimuth and -20
+             degrees elevation
+
+             rfpipe-001 45.0 -20.0
 ```
 
 
@@ -1058,7 +1061,7 @@ pattern.
 
 ```
     format:  jam_on JAMMER_PLATFORM[-COMPONENT] txpower_dBm bandwidth_hz \
-	                                            period_usec duty_cycle \
+                                                period_usec duty_cycle \
                                                 frequency[,frequency]*
 
     example: Set jammer-001 to transmit 1MHz wide bands at 20dBm
@@ -1073,7 +1076,10 @@ The `jam_off` event halts all jamming transmissions from the target `JAMMER_PLAT
 
 ```
     format:  jam_off JAMMER_PLATFORM[-COMPONENT]
-	example: jam_off jammer-001
+
+    example: Turn off jammer-001.
+
+             jam_off jammer-001
 ```
 
 

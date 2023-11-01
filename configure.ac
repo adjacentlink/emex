@@ -32,7 +32,7 @@ AC_COPYRIGHT([
   See toplevel COPYING for more information.
 ])
 
-AC_INIT([emex],0.6.2,[labs at adjacentlink dot com])
+AC_INIT([emex],0.6.3,[labs at adjacentlink dot com])
 
 AM_INIT_AUTOMAKE([1.9.6])
 
