@@ -260,12 +260,39 @@ RUN  ssh-keygen -b 4096 -P "" -m PEM -t rsa -f id_rsa && cp id_rsa.pub authorize
 ## Generate sshd system keys
 RUN ssh-keygen -A
 
+# Clean
+WORKDIR /opt
+RUN rm -rf emane && \
+    rm -rf emane-jammer-simple && \
+    rm -rf emane-model-lte && \
+    rm -rf emane-node-director && \
+    rm -rf emane-spectrum-tools && \
+    rm -rf emex && \
+    rm -f lxc-4.0.10-1.fc35.src.rpm && \
+    rm -rf mgen && \
+    rm -rf openstatistic && \
+    rm -rf opentestpoint && \
+    rm -rf opentestpoint-labtools && \
+    rm -rf opentestpoint-probe-emane && \
+    rm -rf opentestpoint-probe-emex && \
+    rm -rf opentestpoint-probe-iproute && \
+    rm -rf opentestpoint-probe-iptraffic && \
+    rm -rf opentestpoint-probe-lte && \
+    rm -rf opentestpoint-probe-mgen && \
+    rm -rf opentestpoint-probe-system && \
+    rm -rf patches && \
+    rm -f patches.tgz && \
+    rm -rf python-etce && \
+    rm -rf srsRAN-emane && \
+    rm -rf waveform-resource
+
 # import scripts
 WORKDIR /opt
-COPY run-emexcontainerd.sh /opt
+COPY dependencies/run-emexcontainerd.sh /opt
 RUN chmod 755 /opt/run-emexcontainerd.sh
 
-COPY run-etce.sh /opt
+COPY dependencies/run-etce.sh /opt
 RUN chmod 755 /opt/run-etce.sh
 
 CMD ["/opt/run-emexcontainerd.sh"]
+

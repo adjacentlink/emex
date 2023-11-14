@@ -24,6 +24,8 @@ setup.py
 
 # docker
 docker/patches.tgz
+docker/patches_in
+docker/emex-*-rpms
 
 # debs
 .debbuild/

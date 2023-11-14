@@ -2,7 +2,7 @@
 
 usage="build-image.sh [-r] [-p] version"
 
-tag=emex
+image=emex
 version=
 rebuild=
 apply_patch=0
@@ -31,15 +31,26 @@ fi
 
 version=$1
 
-outputimage=${tag}:${version}
+function tgz_patches() {
+    if [ -d patches ]; then
+	rm -rf patches
+    fi
 
-rm -rf patches
-mkdir -p patches
-if [ $apply_patch == "1" ]; then
-    cp patches_in/* patches/
-fi
+    mkdir -p patches
 
-tar -cvzf patches.tgz patches
-rm -rf patches
+    if [ -d patches_in ]; then
+	if [ $apply_patch == "1" ]; then
+	    cp patches_in/* patches/
+	fi
+    fi
 
-docker build ${rebuild} --rm -t $outputimage -f Dockerfile .
+    tar -cvzf patches.tgz patches
+    rm -rf patches
+}
+
+
+tgz_patches
+
+docker build ${rebuild} --rm -t $image:$version -t $image:latest -f Dockerfile .
+
+rm -f patches.tgz
