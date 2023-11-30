@@ -77,8 +77,10 @@ class NemHelper(ConfigHelper):
         for plt in platforms:
             for c, pg, p, v in plt.get_params():
                 if p == 'nemid':
-                    if v:
-                        nemids[v[0]].append(f'{plt.name}.{c}')
+                    if not v:
+                        raise ValueError(f'Platform {plt.name} does not have a nemid assigned')
+
+                    nemids[v[0]].append(f'{plt.name}.{c}')
 
         for nemid, plt_cmps in nemids.items():
             if len(plt_cmps) > 1:

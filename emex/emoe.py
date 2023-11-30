@@ -51,9 +51,14 @@ class Emoe:
             emoe.add_antenna(
                 Antenna.from_protobuf(antenna_proto, antennatypes))
 
+        platforms = []
         for platform_proto in emoe_proto.platforms:
-            emoe.add_platform(
-                Platform.from_protobuf(platform_proto, platformtypes))
+            platforms.append(Platform.from_protobuf(platform_proto, platformtypes))
+
+        Emoe.configure_and_check(platforms)
+
+        for platform in platforms:
+            emoe.add_platform(platform)
 
         for intial_condition_proto in emoe_proto.initial_conditions:
             emoe.add_initial_condition(
@@ -62,13 +67,8 @@ class Emoe:
         return emoe
 
 
-    def __init__(self,
-                 name,
-                 platforms=[],
-                 antennas=[],
-                 initial_conditions=[]):
-        self._name = name
-
+    @staticmethod
+    def configure_and_check(platforms):
         helpers=[NemHelper, Ipv4Helper, PhyHelper]
 
         helpers.extend(load_platform_helpers(platforms))
@@ -87,6 +87,16 @@ class Emoe:
 
         for helper in helpers:
             helper().check(platforms)
+
+
+    def __init__(self,
+                 name,
+                 platforms=[],
+                 antennas=[],
+                 initial_conditions=[]):
+        self._name = name
+
+        self.configure_and_check(platforms)
 
         # map of (platform_name, component_name) tuples to its corresponding
         # antennaname, north, east and up parameters

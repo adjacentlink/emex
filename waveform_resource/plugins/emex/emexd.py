@@ -520,7 +520,7 @@ class Plugin(BasePlugin):
     def _handle_check_emoe(self, request):
         emoe_name = request.checkEmoeRequest.emoe_name
 
-        logging.info(f'received checkEmoeRequet for emoe "{emoe_name}" '
+        logging.info(f'received checkEmoeRequest for emoe "{emoe_name}" '
                      f'with {len(request.checkEmoeRequest.emoe.platforms)} platforms.')
 
         reply = emexd_pb2.ServerMessage()
