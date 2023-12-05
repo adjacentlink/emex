@@ -1,6 +1,6 @@
 #!/bin/bash
 
-usage="build-image.sh [-r] [-p] version"
+usage="build-docker-image.sh [-r] [-p] version"
 
 image=emex
 version=

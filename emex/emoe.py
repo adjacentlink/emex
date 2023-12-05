@@ -34,6 +34,7 @@ import math
 
 from emex.antenna import Antenna
 from emex.antennaprofile import AntennaProfile
+from emex.emoeerror import EmoeError
 from emex.platform import Platform
 from emex.initialcondition import InitialCondition
 from emex.helpers.nemhelper import NemHelper
@@ -55,7 +56,7 @@ class Emoe:
         for platform_proto in emoe_proto.platforms:
             platforms.append(Platform.from_protobuf(platform_proto, platformtypes))
 
-        Emoe.configure_and_check(platforms)
+        Emoe.configure_and_check_platforms(platforms)
 
         for platform in platforms:
             emoe.add_platform(platform)
@@ -68,7 +69,7 @@ class Emoe:
 
 
     @staticmethod
-    def configure_and_check(platforms):
+    def configure_and_check_platforms(platforms):
         helpers=[NemHelper, Ipv4Helper, PhyHelper]
 
         helpers.extend(load_platform_helpers(platforms))
@@ -81,7 +82,7 @@ class Emoe:
             if not p.configured:
                 unconfigured_str = ', '.join(['.'.join(ucfg)
                                               for ucfg in p.unconfigured()])
-                raise ValueError(
+                raise EmoeError(
                     f'Platform "{p.name}" has unconfigured parameters ' \
                     f'"{unconfigured_str}".')
 
@@ -96,7 +97,7 @@ class Emoe:
                  initial_conditions=[]):
         self._name = name
 
-        self.configure_and_check(platforms)
+        self.configure_and_check_platforms(platforms)
 
         # map of (platform_name, component_name) tuples to its corresponding
         # antennaname, north, east and up parameters
@@ -185,7 +186,7 @@ class Emoe:
                 have_antenna = antennaname in self.antennas
 
                 if not have_antenna:
-                    raise ValueError(
+                    raise EmoeError(
                         f'For platform "{platform.name}" unknown antenna0 name "{antennaname}"')
 
                 north = c.get_param('phy', 'antenna0_north').value[0]
@@ -219,6 +220,10 @@ class Emoe:
 
 
     def add_initial_condition(self, initial_condition):
+        if not self.platform_by_name(initial_condition.platform_name):
+            raise EmoeError(
+                f'Unknown platform "{initial_condition.platform_name}" in initial conditions.')
+
         self._initial_conditions.append(initial_condition)
 
 
