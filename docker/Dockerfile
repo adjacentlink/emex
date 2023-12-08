@@ -26,9 +26,8 @@ ARG opentestpointprobeemexbranch=$defaultbranch
 # update all installed built-packages
 RUN dnf -y update && \
     dnf -y install git epel-release dnf-plugins-core patch && \
-    dnf config-manager --set-enabled powertools
-
-RUN dnf clean all
+    dnf config-manager --set-enabled powertools && \
+    dnf clean all
 
 WORKDIR /opt
 COPY patches.tgz .
@@ -289,10 +288,7 @@ RUN rm -rf emane && \
 # import scripts
 WORKDIR /opt
 COPY dependencies/run-emexcontainerd.sh /opt
-RUN chmod 755 /opt/run-emexcontainerd.sh
-
 COPY dependencies/run-etce.sh /opt
-RUN chmod 755 /opt/run-etce.sh
+RUN chmod 755 /opt/run-emexcontainerd.sh /opt/run-etce.sh
 
 CMD ["/opt/run-emexcontainerd.sh"]
-

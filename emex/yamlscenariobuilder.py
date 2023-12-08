@@ -118,8 +118,8 @@ class YamlScenarioBuilder:
             platform_type = platformtypes.get(config_platform_type, None)
 
             if not platform_type:
-                raise ValueError(f'Unknown type {config_platform_type} '
-                                 f'for platform "{plt_name}".')
+                raise EmoeError(f'Unknown type "{config_platform_type}" '
+                                f'for platform "{plt_name}".')
             """
             config = {
             'r1': {

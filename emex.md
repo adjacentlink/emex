@@ -150,6 +150,50 @@ orchestrated by the `emex run` command discussed later.
 ![EMOE Lifecycle Sequence](doc/emex-synchronous-emulation-sequence.png){#emex-lifecycle-sequence}
 
 
+## Installation
+
+Installing EMEX requires installing the emex package and building the
+emex container. EMEX is tested on Ubuntu 20.04 and 22.04. You will
+need to install *git* to clone the EMEX repository and *docker.io* (deb
+package, not snap - see [Troubleshooting Notes](#troubleshooting-notes)) to run emulations. Be sure to add your user account
+to the *docker* group too.
+
+
+### Ubuntu 20.04 and 22.04
+
+```
+# Install dependencies and add username to docker group
+[user@host]$ sudo apt-get install git docker.io
+[user@host]$ sudo usermod -aG docker YOURUSERNAME
+
+# Clone the emex repository
+[user@host]$ git clone https://github.com/adjacentlink/emex.git
+
+# Build and install the emex package
+[user@host]$ cd emex
+[user@host]$ ./autogen.sh; ./configure; make deb
+[user@host]$ sudo dpkg -i .debbuild/emex_*all.deb; sudo apt-get install -f
+
+# Run build-docker-image.sh to build the emex docker image.
+[user@host]$ cd docker
+[user@host]$ ./build-docker-image.sh
+Building docker image emex:0.6.3
+    ...
+Successfully built b4fb7830e1f4
+Successfully tagged emex:0.6.3
+Successfully tagged emex:latest
+
+# Verify emex image
+[user@host]$ docker image ls emex
+REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
+emex         0.6.3     b4fb7830e1f4   2 minutes ago   4.76GB
+emex         latest    b4fb7830e1f4   2 minutes ago   4.76GB
+```
+
+
+
+
+
 ## Getting Started
 
 The current release includes `emexd` and `emexcontainerd` and the
@@ -1216,13 +1260,13 @@ and/or traffic load.
 
 ## Troubleshooting Notes
 
-### Ubuntu Docker Installation
+### Ubuntu Docker snap versus deb package
 
-Currently EMEX is only supported and tested for Ubuntu 20.04. EMEX
-requires Docker (`docker.io` package) to be installed on the host
-system where `emexd` runs and launches EMOE containers.
+Currently EMEX is only supported and tested for Ubuntu 20.04 and
+22.04. EMEX requires Docker (`docker.io` package) to be installed on
+the host system where `emexd` runs and launches EMOE containers.
 
-Ubuntu 20.04 allows Docker to be installed as a traditional deb
+Ubuntu allows Docker to be installed as a traditional deb
 package (apt-get install) or as a snap (snap install). EMEX
 is only tested using the debs package:
 
