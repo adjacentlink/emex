@@ -179,8 +179,8 @@ class InitialCondition:
         for pointing in self._antenna_pointings:
             lines.append(f'antenna:')
 
-            lines.extend(pointing.antenna.lines(depth))
-            lines.append(f'{indent}component: {pointing.component_name}')
+            if pointing.component_names:
+                lines.append(f'{indent}component: {pointing.component_names[0]}')
             lines.append(f'{indent}azimuth: {pointing.azimuth}')
             lines.append(f'{indent}elevation: {pointing.elevation}')
 

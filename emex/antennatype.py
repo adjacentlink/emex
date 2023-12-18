@@ -63,8 +63,11 @@ class AntennaType:
 
         self._description = config_dict.get('description', '')
 
-        self._paramtypes = { name: ParamType(name, values)
-                             for name, values in config_dict['parameters'].items() }
+        self._paramtypes = {}
+
+        if config_dict.get('parameters', None):
+            self._paramtypes = {name: ParamType(name, values)
+                                for name,values in config_dict['parameters'].items()}
 
 
     @property

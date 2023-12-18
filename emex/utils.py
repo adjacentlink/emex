@@ -32,10 +32,13 @@
 
 from collections import defaultdict,namedtuple
 import importlib
+import os
 import pkgutil
 import socket
 import struct
 import logging
+
+import emex.data
 
 
 def line_breaker(line, width):
@@ -208,11 +211,11 @@ def load_platform_helpers(platforms):
 
     # always load physical layer helper
     platform_helpers = [
-        load_class_from_modulename(f'emex.helpers.phyhelper')
+        load_class_from_modulename(f'emex.helpers.platforms.phyhelper')
     ]
 
     for w in waveforms:
-        wf_class = load_class_from_modulename(f'emex.helpers.{w}')
+        wf_class = load_class_from_modulename(f'emex.helpers.platforms.{w}')
 
         if wf_class:
             platform_helpers.append(wf_class)
@@ -250,3 +253,17 @@ def sock_recv_string(sock):
     (count,) = struct.unpack('!I', sock.recv(4))
 
     return struct.unpack('%ds' % count, sock.recv(count, socket.MSG_WAITALL))[0]
+
+
+def get_emex_data_resource_file_path(resource):
+    paths = filter(os.path.isfile,
+                   [os.path.join(path, resource)
+                    for path in emex.data.__path__])
+
+    return list(paths)[0]
+
+
+def get_emex_data_resource_paths(resource):
+    return list(
+        filter(os.path.exists,
+               [os.path.join(path, resource) for path in emex.data.__path__]))

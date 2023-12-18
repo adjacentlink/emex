@@ -12,4 +12,3 @@ parameters:
         default: 6
     rejection:
         default: -200
-    

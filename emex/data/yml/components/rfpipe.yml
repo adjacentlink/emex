@@ -14,7 +14,7 @@ parameters:
             default: freespace
             choice: [precomputed, 2ray, freespace]
         subid:
-            default: 300
+            default: 100
         antenna0:
             default: omni
         antenna0_north:

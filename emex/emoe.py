@@ -37,9 +37,9 @@ from emex.antennaprofile import AntennaProfile
 from emex.emoeerror import EmoeError
 from emex.platform import Platform
 from emex.initialcondition import InitialCondition
-from emex.helpers.nemhelper import NemHelper
-from emex.helpers.ipv4helper import Ipv4Helper
-from emex.helpers.phyhelper import PhyHelper
+from emex.helpers.platforms.nemhelper import NemHelper
+from emex.helpers.platforms.ipv4helper import Ipv4Helper
+from emex.helpers.platforms.phyhelper import PhyHelper
 from emex.utils import load_platform_helpers
 
 

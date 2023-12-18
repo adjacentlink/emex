@@ -30,19 +30,25 @@
 #
 # See toplevel COPYING for more information.
 
-from emex.helpers.antennas.sectorhelper import SectorHelper
-from emex.helpers.antennas.defaulthelper import DefaultHelper
+import os
+import shutil
+import emex.utils as utils
 
 
-class AntennaBuilder:
+class DefaultHelper:
     def build(self, antennaprofile, configdir):
-        antennatype_name = antennaprofile.antenna.antennatype_name
+        xmlfile = f'{antennaprofile.antenna.antennatype_name}.xml'
 
-        if antennatype_name == 'sector':
-            return SectorHelper().build(antennaprofile, configdir)
-        elif antennatype_name == 'ka_band_sector_horn':
-            return DefaultHelper().build(antennaprofile, configdir)
-        elif antennatype_name == 'lhcp_maarten_baert_pagoda_2':
-            return DefaultHelper().build(antennaprofile, configdir)
-        else:
-            raise ValueError(f'Unknown antenna type "{antennatype_name}".')
+        # lhcp-maarten-baert-pagoda-2-530000MHz.xml
+        # ka-band-sector-horn-4000000MHz.xml 
+        xmlfile = utils.get_emex_data_resource_file_path(f'xml/antennas/{xmlfile}')
+
+        # copy the template antenna profile to the configdir
+        profile_file_name = \
+            f'{antennaprofile.name}_north{antennaprofile.north}_east{antennaprofile.east}_up{antennaprofile.up}.xml'
+        profile_file = os.path.join(configdir, profile_file_name)
+
+        shutil.copy2(xmlfile, profile_file)
+
+        return profile_file_name
+        

@@ -33,6 +33,7 @@
 from collections import defaultdict
 import logging
 import re
+import sys
 from yaml import safe_load
 
 from emex.initialcondition import InitialCondition
@@ -167,12 +168,13 @@ class YamlScenarioBuilder:
 
             user_config = defaultdict(lambda: [])
 
-            for param_name,value in config.get('parameters', {}).items():
-                user_config[param_name] = value
+            if config.get('parameters'):
+                for param_name,value in config.get('parameters', {}).items():
+                    user_config[param_name] = value
 
-                antennas.append(Antenna(antennaname,
-                                        antennatypes[antennatype],
-                                        user_config))
+            antennas.append(Antenna(antennaname,
+                                    antennatypes[antennatype],
+                                    user_config))
 
         return antennas
 
