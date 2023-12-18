@@ -194,7 +194,7 @@ class Manager:
 
         emoe_rt.state = EmoeState.FAILED
 
-        self._send_container_control_message(emoe_rt, EmoeCommand.START)
+        self._send_container_control_message(emoe_rt, EmoeCommand.STOP)
 
         self._broker.send_container_state_message_to_client(emoe_rt)
 
