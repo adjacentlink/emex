@@ -4,12 +4,12 @@
   <!-- Antenna Pattern generated from Antenna Test Lab Co Example 6: LHCP Omnidirectional FPV Antenna -->
   <!-- https://antennatestlab.com/antenna-examples/example-6-lhcp-miniature-fpv-omnidirectional-antenna -->
   <antennapattern>
-    <elevation min="-90" max="-89">
+    <elevation min="-90" max="-90">
       <bearing min="0" max="359">
         <gain value="-19.94"/>
       </bearing>
     </elevation>
-    <elevation min="-88" max="-80">
+    <elevation min="-89" max="-80">
       <bearing min="0" max="9">
         <gain value="-16.62"/>
       </bearing>
