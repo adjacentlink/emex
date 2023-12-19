@@ -129,7 +129,7 @@ class WaveformType:
     def __str__(self):
         s = f'name: {self.name}\n'
 
-        s+= f'template: self.template\n'
+        s+= f'template: {self.template}\n'
 
         s+= f'description:\n'
         for line in line_breaker(self.description, 60):

@@ -215,7 +215,7 @@ def load_platform_helpers(platforms):
     ]
 
     for w in waveforms:
-        wf_class = load_class_from_modulename(f'emex.helpers.platforms.{w}')
+        wf_class = load_class_from_modulename(f'emex.helpers.components.{w}')
 
         if wf_class:
             platform_helpers.append(wf_class)
