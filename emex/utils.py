@@ -211,7 +211,7 @@ def load_platform_helpers(platforms):
 
     # always load physical layer helper
     platform_helpers = [
-        load_class_from_modulename(f'emex.helpers.platforms.phyhelper')
+        load_class_from_modulename(f'emex.helpers.phyhelper')
     ]
 
     for w in waveforms:
