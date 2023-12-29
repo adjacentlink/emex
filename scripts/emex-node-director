@@ -37,6 +37,7 @@ import sys
 from emane_node_director.eelparser import EELParser
 from emex.emoestate import EmoeState
 from emex.yamlscenariobuilder import YamlScenarioBuilder
+from emex.scenariostatemanager import ScenarioStateManager
 from emex.scenariorunner import ScenarioRunner
 from emane_node_director.eelwriter import EELWriter
 from emane_node_director.shell import Shell
@@ -146,10 +147,12 @@ Direct EMANE node location, orientation and pointing.'''
         args.emoename = f'emoe.{Timestamper().next_timestamp.emoe_id}'
 
     try:
-        #node_states = EELParser().parse_pov(args.inputfile)
         builder = YamlScenarioBuilder(args.inputfile)
 
-        # start scenario and connect
+        state_manager = \
+            ScenarioStateManager(builder.initial_conditions, builder.events)
+
+        # translate yaml to node_states
         runner = ScenarioRunner((addr,int(port)), args.emoename, builder)
 
         check_reply,check_message = runner.check()
@@ -159,6 +162,7 @@ Direct EMANE node location, orientation and pointing.'''
 
             return check_reply,check_message
 
+        # start scenario and connect
         runner.start_emoe()
 
         emoe_entry = runner.wait_for_emoe_running()
@@ -166,19 +170,13 @@ Direct EMANE node location, orientation and pointing.'''
         if emoe_entry.state >= EmoeState.STOPPING:
             raise EmoeError(f'{emoe_entry.emoe_name} failed to start.')
         
-        # translate yaml to node_states
         writer = EELWriter()
+
         publisher = ScenarioPublisher(args)
-        from pprint import pprint
-        print('pov_states')
-        pprint([(etime,str(val)) for etime,val in builder.pov_states])
-        print()
-        print('antenna_states')
-        pprint([(etime,str(val)) for etime,val in builder.antenna_states])
-        print()
+
         shell = Shell(
-            builder.pov_states,
-            builder.antenna_states,
+            state_manager.pov_states,
+            state_manager.antenna_states,
             publisher,
             writer,
             args)
