@@ -79,7 +79,9 @@ class Timestamp:
 
 
 class Timestamper:
-    def __init__(self, emex_workdir):
+    EMEX_WORKDIR = '/tmp/emex'
+
+    def __init__(self, emex_workdir=EMEX_WORKDIR):
         self._last_timestamp = 0
         self._emex_workdir = emex_workdir
 

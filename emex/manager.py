@@ -51,8 +51,6 @@ from emex.emoe import Emoe
 
 
 class Manager:
-    EMEX_WORKDIR = '/tmp/emex'
-
     def __init__(self, broker, config, container_worker_connect_endpoint):
         self._broker = broker
 
@@ -75,9 +73,9 @@ class Manager:
 
         self._emoes_by_emoe_id = {}
 
-        os.makedirs(Manager.EMEX_WORKDIR, exist_ok=True)
+        os.makedirs(Timestamper.EMEX_WORKDIR, exist_ok=True)
 
-        self._timestamper = Timestamper(Manager.EMEX_WORKDIR)
+        self._timestamper = Timestamper()
 
 
     @property

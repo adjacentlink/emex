@@ -126,7 +126,7 @@ class ScenarioRunner():
         return reply.result,reply.message
 
 
-    def _start_emoe(self):
+    def start_emoe(self):
         # If the check passes, start it
         reply = self._emexd.startemoe(self._emoe)
 
@@ -139,7 +139,7 @@ class ScenarioRunner():
             f'"{reply.message}".')
 
 
-    def _wait_for_emoe_running(self):
+    def wait_for_emoe_running(self):
         sys.stdout.write(f'Waiting for {self._emoe.name} state RUNNING ')
 
         emoe_running = False
@@ -175,7 +175,7 @@ class ScenarioRunner():
         return emoe_entry
 
 
-    def _start_monitor(self,
+    def start_monitor(self,
                        emoe_entry,
                        otestpoint_publish_endpoint):
         if not self._monitor:
@@ -192,7 +192,7 @@ class ScenarioRunner():
         self._monitor.run(self._output_path, otestpoint_publish_endpoint)
 
 
-    def _run_scenario(self, emoe_endpoint):
+    def run_scenario(self, emoe_endpoint):
         # issue events
         scenario_rpc = ScenarioRpcClient(emoe_endpoint)
 
@@ -213,14 +213,14 @@ class ScenarioRunner():
         return flows_df
 
 
-    def _stop_monitor(self, flows_df):
+    def stop_monitor(self, flows_df):
         if self._monitor:
             self._monitor.stop(flows_df=flows_df)
 
             logging.info(f'Output data written to {self._output_path}')
 
 
-    def _stop_emoe(self, emoe_handle):
+    def stop_emoe(self, emoe_handle):
         # stop emoe
         logging.info('scenario complete, stop emoe')
         reply = self._emexd.stopemoe(emoe_handle)
@@ -240,9 +240,9 @@ class ScenarioRunner():
 
             return check_reply,check_message
 
-        self._start_emoe()
+        self.start_emoe()
 
-        emoe_entry = self._wait_for_emoe_running()
+        emoe_entry = self.wait_for_emoe_running()
 
         if emoe_entry.state >= EmoeState.STOPPING:
             raise EmoeError(f'{emoe_entry.emoe_name} failed to start.')
@@ -264,10 +264,10 @@ class ScenarioRunner():
                 otestpoint_publish_endpoint = (accessor.ip_address, accessor.port)
         logging.info('###############')
 
-        self._start_monitor(emoe_entry, otestpoint_publish_endpoint)
+        self.start_monitor(emoe_entry, otestpoint_publish_endpoint)
 
-        flows_df = self._run_scenario(emoe_endpoint)
+        flows_df = self.run_scenario(emoe_endpoint)
 
-        self._stop_monitor(flows_df)
+        self.stop_monitor(flows_df)
 
-        self._stop_emoe(emoe_entry.handle)
+        self.stop_emoe(emoe_entry.handle)
