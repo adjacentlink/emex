@@ -1,4 +1,5 @@
-# Copyright (c) 2022,2023 - Adjacent Link LLC, Bridgewater, New Jersey
+#
+# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

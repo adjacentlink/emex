@@ -48,10 +48,10 @@ from emex.timestamper import Timestamper
 
 def main():
     usage = '''
-Direct EMANE node location, orientation and pointing.'''
+Direct location, orientation and pointing of platforms running in an EMEX EMOE.'''
 
     parser = argparse.ArgumentParser( \
-                prog='emane-node-director',
+                prog='emex-node-director',
                 description=usage,
                 formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -158,7 +158,7 @@ Direct EMANE node location, orientation and pointing.'''
         check_reply,check_message = runner.check()
 
         if not check_reply:
-            logging.error('failed check_reply with {check_message}')
+            print(f'failed check_reply with "{check_message}"')
 
             return check_reply,check_message
 
@@ -167,12 +167,14 @@ Direct EMANE node location, orientation and pointing.'''
 
         emoe_entry = runner.wait_for_emoe_running()
 
-        if emoe_entry.state >= EmoeState.STOPPING:
-            raise EmoeError(f'{emoe_entry.emoe_name} failed to start.')
+        _,emoe_endpoint = runner.get_endpoints(emoe_entry)
+
+        if not emoe_endpoint:
+            raise EmoeError(f'No emexcontainerd accessor found for {emoe_entry.emoe_name}.')
         
         writer = EELWriter()
 
-        publisher = ScenarioPublisher(args)
+        publisher = ScenarioPublisher(emoe_endpoint)
 
         shell = Shell(
             state_manager.pov_states,

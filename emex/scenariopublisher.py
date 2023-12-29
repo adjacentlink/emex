@@ -37,20 +37,23 @@ from emex.emaneeventmessages import POV,Pathloss,AntennaPointing
 
 
 class ScenarioPublisher:
-    def __init__(self, args):
-        toks = args.endpoint.split(':')
-
-        if not len(toks) == 2:
-            print('endpoint must be in form address:port')
-            exit(1)
-
-        ipaddr,port = toks
-
-        #self._client = ScenarioRpcClient(emoe_endpoint)
+    def __init__(self, emoe_endpoint):
+        self._client = ScenarioRpcClient(emoe_endpoint)
 
 
     def publish_locations(self, current_state):
         print('ScenarioPublisher.publish_locations')
+
+        events = []
+
+        for (nodeid,node),loc in current_state.iterrows(full_index=True):
+            events.append((node,POV([],
+                                    loc.lat,loc.lon,loc.alt,
+                                    loc.speed,loc.az,loc.el,
+                                    loc.pitch,loc.roll,loc.yaw)))
+
+        self._client.send_event({'pov':events})
+
         """
         event = LocationEvent()
 

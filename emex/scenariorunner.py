@@ -175,6 +175,27 @@ class ScenarioRunner():
         return emoe_entry
 
 
+    def get_endpoints(self, emoe_entry):
+        otestpoint_publish_endpoint = None
+        emoe_endpoint = None
+
+        print('###############')
+        print(f'handle: {emoe_entry.handle}')
+        print(f'name: {emoe_entry.emoe_name}')
+        print(f'state: {emoe_entry.state.name}')
+        print(f'cpus: {emoe_entry.cpus}')
+        print(f'accesors:')
+        for accessor in emoe_entry.service_accessors:
+            print(f'   {accessor.name}: {accessor.ip_address}:{accessor.port}')
+            if accessor.name == 'emexcontainerd':
+                emoe_endpoint = (accessor.ip_address, accessor.port)
+            elif accessor.name == 'otestpoint-publish':
+                otestpoint_publish_endpoint = (accessor.ip_address, accessor.port)
+        print('###############')
+
+        return otestpoint_publish_endpoint,emoe_endpoint
+
+
     def start_monitor(self,
                        emoe_entry,
                        otestpoint_publish_endpoint):
@@ -247,22 +268,7 @@ class ScenarioRunner():
         if emoe_entry.state >= EmoeState.STOPPING:
             raise EmoeError(f'{emoe_entry.emoe_name} failed to start.')
 
-        otestpoint_publish_endpoint = None
-        emoe_endpoint = None
-
-        logging.info('###############')
-        logging.info(f'handle: {emoe_entry.handle}')
-        logging.info(f'name: {emoe_entry.emoe_name}')
-        logging.info(f'state: {emoe_entry.state.name}')
-        logging.info(f'cpus: {emoe_entry.cpus}')
-        logging.info(f'accesors:')
-        for accessor in emoe_entry.service_accessors:
-            logging.info(f'   {accessor.name}: {accessor.ip_address}:{accessor.port}')
-            if accessor.name == 'emexcontainerd':
-                emoe_endpoint = (accessor.ip_address, accessor.port)
-            elif accessor.name == 'otestpoint-publish':
-                otestpoint_publish_endpoint = (accessor.ip_address, accessor.port)
-        logging.info('###############')
+        otestpoint_publish_endpoint,emoe_endpoint = self.get_endpoints(emoe_entry)
 
         self.start_monitor(emoe_entry, otestpoint_publish_endpoint)
 
