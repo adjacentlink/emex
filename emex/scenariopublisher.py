@@ -42,8 +42,6 @@ class ScenarioPublisher:
 
 
     def publish_locations(self, current_state):
-        print('ScenarioPublisher.publish_locations')
-
         events = []
 
         for (nodeid,node),loc in current_state.iterrows(full_index=True):
@@ -54,44 +52,24 @@ class ScenarioPublisher:
 
         self._client.send_event({'pov':events})
 
-        """
-        event = LocationEvent()
-
-        for nodeid,loc in current_state.iterrows():
-            event.append(nodeid,
-                         latitude=loc.lat,
-                         longitude=loc.lon,
-                         altitude=loc.alt,
-                         azimuth=loc.az,
-                         elevation=loc.el,
-                         magnitude=loc.speed,
-                         pitch=loc.pitch,
-                         roll=loc.roll,
-                         yaw=loc.yaw)
-
-        self._client.send_event(event)
-        """
 
     def publish_antenna_profiles(self, current_state):
-        print('ScenarioPublisher.publish_antenna_profiles')
-        """
-        event = AntennaProfileEvent()
+        events = []
 
-        for nodeid, pnt in current_state.iterrows():
-            event.append(nemId=nodeid, profile=int(pnt.ant_num), azimuth=pnt.az, elevation=pnt.el)
+        for (nodeid,node),pointing in current_state.iterrows(full_index=True):
+            events.append((node,AntennaPointing([],pointing.az,pointing.el)))
 
-        self._service.publish(0, event)
-        """
+        self._client.send_event({'antenna_pointing':events})
 
 
     def publish_pathlosses(self, current_state):
-        print('ScenarioPublisher.publish_pathlosses')
-        """
-        pathloss_events = defaultdict(lambda: PathlossEvent())
+        events = defaultdict(lambda: [])
 
-        for (nodeid1, nodeid2), row in current_state.iterrows():
-            pathloss_events[nodeid2].append(nodeid1, forward=row.pathloss)
+        for (node1id,nodeid2),p in current_state.iterrows():
+            events[p.node1].append(Pathloss(p.node2, p.pathloss, [], []))
 
-        for nodeid2, event in pathloss_events.items():
-            self._service.publish(nodeid2, event)
-        """
+        self._client.send_event({
+            'pathloss':[
+                (node,pathlosses)
+                for node,pathlosses in events.items()
+            ]})
