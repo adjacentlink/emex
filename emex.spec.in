@@ -62,6 +62,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/emex-receptions-vs-time
 %{_bindir}/emex-transmissions-vs-time
 %{_bindir}/emex-monitor-live-rx-packets
+%{_bindir}/emex-node-director
 %{python3_sitelib}/*
 %doc %{_pkgdocdir}
 %if 0%{?_licensedir:1}
