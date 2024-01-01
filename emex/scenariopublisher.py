@@ -82,3 +82,10 @@ class ScenarioPublisher:
     def publish_flow_off(self, flow_off_request):
         self._client.send_event({'flow_off': [flow_off_request]})
 
+
+    def publish_jam_on(self, jam_on_request):
+        self._client.send_event({'jam_on': [jam_on_request]})
+
+
+    def publish_jam_off(self, jam_off_request):
+        self._client.send_event({'jam_off': [jam_off_request]})

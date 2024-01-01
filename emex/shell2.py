@@ -788,75 +788,80 @@ class Shell2(cmd.Cmd):
             print('Unknown destination "%s"' % toks[1])
             return
 
-        sources = [self._tracker.id_to_node(id) for id in srcids]
-        destinations = [self._tracker.id_to_node(id) for id in dstids]
+        flow_on_request = None
 
-        toks.pop(0)
-        toks.pop(0)
+        try:
+            sources = [self._tracker.id_to_node(id) for id in srcids]
+            destinations = [self._tracker.id_to_node(id) for id in dstids]
 
-        subtoks = list(map(lambda s: s.split('='), toks))
+            toks.pop(0)
+            toks.pop(0)
 
-        subtoks.reverse()
+            subtoks = list(map(lambda s: s.split('='), toks))
 
-        while len(subtoks[-1]) == 2:
-            tname,tval = subtoks.pop()
+            subtoks.reverse()
 
-            tname = tname.lower()
-            print(f'tname={tname} tval={tval}')
+            while len(subtoks[-1]) == 2:
+                tname,tval = subtoks.pop()
 
-            if tname == 'proto':
-                protocol = {
-                    'udp':TrafficProtocolType.UDP,
-                    'tcp':TrafficProtocolType.TCP,
-                    'multicast':TrafficProtocolType.MULTICAST
-                }.get(tval.lower(), None)
+                tname = tname.lower()
 
-                if not protocol:
-                    print(f'Unknown flow_on protocol "{protocol}"')
+                if tname == 'proto':
+                    protocol = {
+                        'udp':TrafficProtocolType.UDP,
+                        'tcp':TrafficProtocolType.TCP,
+                        'multicast':TrafficProtocolType.MULTICAST
+                    }.get(tval.lower(), None)
+
+                    if not protocol:
+                        print(f'Unknown flow_on protocol "{tval}"')
+                        return
+
+                elif tname == 'tos':
+                    tos = int(tval)
+
+                elif tname == 'ttl':
+                    ttl = int(tval)
+
+                else:
+                    print(f'unknown flow_on specifier "{tname}"')
                     return
 
-            elif tname == 'tos':
-                tos = int(tval)
+            flowtypetok = subtoks.pop()[0]
 
-            elif tname == 'ttl':
-                ttl = int(tval)
+            flowtype = {
+                'periodic': SimpleTrafficFlowType.PERIODIC,
+                'poisson': SimpleTrafficFlowType.POISSON,
+                'jitter': SimpleTrafficFlowType.JITTER
+            }.get(flowtypetok, None)
 
-            else:
-                print(f'unknown flow_on specifier "{tname}"')
+            if flowtype is None:
+                print(f'unknown flow_on flow type "{flowtypetok}"')
                 return
 
-        flowtypetok = subtoks.pop()[0]
+            packet_rate = float(subtoks.pop()[0])
 
-        flowtype = {
-            'periodic': SimpleTrafficFlowType.PERIODIC,
-            'poisson': SimpleTrafficFlowType.POISSON,
-            'jitter': SimpleTrafficFlowType.JITTER
-        }.get(flowtypetok, None)
+            size_bytes = int(subtoks.pop()[0])
 
-        if flowtype is None:
-            print(f'unknown flow_on flow type "{flowtypetok}"')
+            jitter_fraction = 0.0
+
+            if subtoks:
+                jitter_fraction = float(subtoks.pop()[0])
+
+            flow_on_request = \
+                StartSimpleFlowRequest(flow_name,
+                                       sources,
+                                       destinations,
+                                       protocol,
+                                       tos,
+                                       ttl,
+                                       flowtype,
+                                       size_bytes,
+                                       packet_rate,
+                                       jitter_fraction)
+        except:
+            self.do_help('flowon')
             return
-
-        packet_rate = float(subtoks.pop()[0])
-
-        size_bytes = int(subtoks.pop()[0])
-
-        jitter_fraction = 0.0
-
-        if subtoks:
-            jitter_fraction = float(subtoks.pop()[0])
-
-        flow_on_request = \
-            StartSimpleFlowRequest(flow_name,
-                                   sources,
-                                   destinations,
-                                   protocol,
-                                   tos,
-                                   ttl,
-                                   flowtype,
-                                   size_bytes,
-                                   packet_rate,
-                                   jitter_fraction)
 
         self._publisher.publish_flow_on(flow_on_request)
 
@@ -898,8 +903,54 @@ class Shell2(cmd.Cmd):
         jamon NodeId txpower_dBm bandwidth_hz period_usec DUTYCYCLE frequency_hz[,frequency_hz]*
 
           DUTYCYCLE: [0 100]
+
+        For example:
+          jamon 1 20.0 1000000 20000 50 2050000000,2090000000
         """
-        pass
+        toks = arg.split()
+
+        if len(toks) < 6:
+            self.do_help('jamon')
+            return
+
+        jammer_name = None
+
+        try:
+            jammer_name = self._tracker.id_to_node(int(toks[0]))
+        except:
+            print('unknown NodeId "{toks[0]}"')
+            return
+
+        jam_on_event = None
+
+        try:
+            txpower_dBm = float(toks[1])
+
+            bandwidth_hz = int(toks[2])
+
+            period_usec = int(toks[3])
+
+            duty_cycle_percent = int(toks[4])
+
+            if duty_cycle_percent <0 or duty_cycle_percent > 100:
+                print('duty cycle must be in range [0 100]')
+                return
+
+            frequencies = list(map(int, toks[5].split(',')))
+
+            jam_on_event = \
+                JamOnEvent(jammer_name,
+                           [], # all components for now
+                           txpower_dBm,
+                           bandwidth_hz,
+                           period_usec,
+                           duty_cycle_percent,
+                           frequencies)
+        except:
+            self.do_help('jamon')
+            return
+
+        self._publisher.publish_jam_on(jam_on_event)
 
 
     def do_jamoff(self, arg):
@@ -908,4 +959,20 @@ class Shell2(cmd.Cmd):
 
         jamoff NodeId
         """
-        pass
+        toks = arg.split()
+
+        if len(toks) < 1:
+            self.do_help('jamoff')
+            return
+
+        jammer_name = None
+
+        try:
+            jammer_name = self._tracker.id_to_node(int(toks[0]))
+        except:
+            print('unknown NodeId "{toks[0]}"')
+            return
+
+        jam_off_event = JamOffEvent(jammer_name, [])
+
+        self._publisher.publish_jam_off(jam_off_event)

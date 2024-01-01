@@ -186,8 +186,6 @@ class ScenarioClientMessageHandler:
         """
 
         for jam_on_evt in eventdict.get('jam_on', []):
-            print(type(jam_on_evt))
-            print(jam_on_evt)
             jam_evt_proto = jammingEvents.add()
 
             jam_evt_proto.type = jam_evt_proto.JAM_ON
