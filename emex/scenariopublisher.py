@@ -73,3 +73,12 @@ class ScenarioPublisher:
                 (node,pathlosses)
                 for node,pathlosses in events.items()
             ]})
+
+
+    def publish_flow_on(self, flow_on_request):
+        self._client.send_event({'flow_on': [flow_on_request]})
+
+
+    def publish_flow_off(self, flow_off_request):
+        self._client.send_event({'flow_off': [flow_off_request]})
+

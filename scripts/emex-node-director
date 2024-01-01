@@ -40,7 +40,7 @@ from emex.yamlscenariobuilder import YamlScenarioBuilder
 from emex.scenariostatemanager import ScenarioStateManager
 from emex.scenariorunner import ScenarioRunner
 from emane_node_director.eelwriter import EELWriter
-from emane_node_director.shell import Shell
+from emex.shell2 import Shell2
 from emex.scenariopublisher import ScenarioPublisher
 from emex.emoeerror import EmoeError
 from emex.timestamper import Timestamper
@@ -176,7 +176,7 @@ Direct location, orientation and pointing of platforms running in an EMEX EMOE.'
 
         publisher = ScenarioPublisher(emoe_endpoint)
 
-        shell = Shell(
+        shell = Shell2(
             state_manager.pov_states,
             state_manager.antenna_states,
             publisher,
