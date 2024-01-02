@@ -37,7 +37,6 @@ from lxml import etree
 import os
 import pprint
 import re
-import shutil
 
 from yaml import safe_load
 
@@ -46,7 +45,6 @@ from emex.containerruntime import ContainerRuntime,BridgeDevice
 from emex.eelformatter import EelFormatter
 from emex.templateutils import format_file,paramdict_to_namedtuple,TemplateError
 from emex.types import platformtypes,antennatypes,waveformtypes,gettype
-import emex.data
 import emex.utils as utils
 import emex.emexd_pb2 as emexd_pb2
 
@@ -139,24 +137,9 @@ class BuilderImplEtce:
         self._write_emexd_config(docdir, emexd_config)
 
 
-    def _get_emex_data_resource_file_path(self, resource):
-        paths = filter(os.path.isfile,
-                       [os.path.join(path, resource)
-                        for path in emex.data.__path__])
-
-        return list(paths)[0]
-
-
-    def _get_emex_data_resource_paths(self, resource):
-        return list(
-            filter(os.path.exists,
-                   [os.path.join(path, resource) for path in emex.data.__path__]))
-
-
-
     def _get_template_path(self, emex_type, value):
         if emex_type == 'waveform' or emex_type == 'host':
-            ret = self._get_emex_data_resource_paths(f'templates/components/{value}')[0]
+            ret = utils.get_emex_data_resource_paths(f'templates/components/{value}')[0]
 
             return ret
         else:
@@ -265,7 +248,7 @@ class BuilderImplEtce:
 
 
     def _write_antenna_files(self, emoe_rt, configdir):
-        builder = AntennaBuilder(self.antennatypes)
+        builder = AntennaBuilder()
 
         built_antennas = []
 
@@ -420,9 +403,9 @@ class BuilderImplEtce:
 
 
     def _write_container_conf(self, emoe_rt, docdir):
-        initsh = self._get_emex_data_resource_file_path(f'builders/etce/init.sh')
+        initsh = utils.get_emex_data_resource_file_path(f'builders/etce/init.sh')
 
-        lxc_conf = self._get_emex_data_resource_file_path(f'builders/etce/lxc.container.conf')
+        lxc_conf = utils.get_emex_data_resource_file_path(f'builders/etce/lxc.container.conf')
 
         net_groups = utils.group_components_by_label(emoe_rt.emoe.platforms, 'net')
 
@@ -606,7 +589,7 @@ class BuilderImplEtce:
 
 
     def _write_steps_file(self, configdir):
-        etce_builders_dirs = self._get_emex_data_resource_paths(f'builders/etce')
+        etce_builders_dirs = utils.get_emex_data_resource_paths(f'builders/etce')
 
         stepsfiles = []
 

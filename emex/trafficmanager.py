@@ -435,6 +435,18 @@ class TrafficManager:
 
                     self._flows.loc[self._flows.flow_index == row.flow_index, 'active'] = False
 
+
+                # For the case where only the flow_name is specified,
+                # delete all flows associated with the flow_name. This
+                # case should cleanly cover removing all rows with flow_name
+                # and allow the flow name to be reused.
+                if request.flow_name and \
+                   not request.flow_ids and \
+                   not request.sources and \
+                   not request.destinations:
+                    self._flows.drop(self._flows.loc[self._flows.flow_name==request.flow_name].index,
+                                     inplace=True)
+
         logging.info(self._flows)
 
         return True,''

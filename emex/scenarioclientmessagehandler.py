@@ -57,10 +57,10 @@ class ScenarioClientMessageHandler:
         client_request_proto.trafficRequest.list_flows_flag = self._list_flows_flag
 
         self.build_start_traffic_flows(
-            client_request_proto.trafficRequest, eventdict['flow_on'])
+            client_request_proto.trafficRequest, eventdict)
 
         self.build_stop_traffic_flows(
-            client_request_proto.trafficRequest, eventdict['flow_off'])
+            client_request_proto.trafficRequest, eventdict)
 
         self.build_emane_events(
             client_request_proto.emaneEvents, eventdict)
@@ -71,8 +71,8 @@ class ScenarioClientMessageHandler:
         return client_request_proto.SerializeToString()
 
 
-    def build_start_traffic_flows(self, trafficRequest, flow_on_events):
-        for request in flow_on_events:
+    def build_start_traffic_flows(self, trafficRequest, eventdict):
+        for request in eventdict.get('flow_on', []):
             request_proto = trafficRequest.startFlowRequests.add()
 
             request_proto.flow_name = request.flow_name
@@ -93,8 +93,8 @@ class ScenarioClientMessageHandler:
             request_proto.simple_flow.jitter_fraction = request.jitter_fraction
 
 
-    def build_stop_traffic_flows(self, trafficRequest, flow_off_events):
-        for request in flow_off_events:
+    def build_stop_traffic_flows(self, trafficRequest, eventdict):
+        for request in eventdict.get('flow_off', []):
             request_proto = trafficRequest.stopFlowRequests.add()
 
             request_proto.flow_name = request.flow_name
@@ -186,8 +186,6 @@ class ScenarioClientMessageHandler:
         """
 
         for jam_on_evt in eventdict.get('jam_on', []):
-            print(type(jam_on_evt))
-            print(jam_on_evt)
             jam_evt_proto = jammingEvents.add()
 
             jam_evt_proto.type = jam_evt_proto.JAM_ON

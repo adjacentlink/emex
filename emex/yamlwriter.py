@@ -1,4 +1,5 @@
-# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
+#
+# Copyright (c) 2020 - Adjacent Link LLC, Bridgewater, New Jersey
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,21 +29,30 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# See toplevel COPYING for more information.
-
-from emex.helpers.antennas.sectorhelper import SectorHelper
-from emex.helpers.antennas.defaulthelper import DefaultHelper
 
 
-class AntennaBuilder:
-    def build(self, antennaprofile, configdir):
-        antennatype_name = antennaprofile.antenna.antennatype_name
+class EELWriter(object):
+    def write(self, time, fd, positions, pointings):
+        for nodeid,loc in positions.iterrows():
+            # -Inf   nem:45 location gps 40.025495,-74.315441,3.0
+            line = '%0.1f nem:%d location gps %0.6f,%0.6f,%0.1f\n' % \
+                (time,
+                 nodeid,
+                 loc.lat,
+                 loc.lon,
+                 loc.alt)
+            fd.write(line)
 
-        if antennatype_name == 'sector':
-            return SectorHelper().build(antennaprofile, configdir)
-        elif antennatype_name == 'ka_band_sector_horn':
-            return DefaultHelper().build(antennaprofile, configdir)
-        elif antennatype_name == 'lhcp_maarten_baert_pagoda_2':
-            return DefaultHelper().build(antennaprofile, configdir)
-        else:
-            raise ValueError(f'Unknown antenna type "{antennatype_name}".')
+        for nodeid,ant in pointings.iterrows():
+            # -Inf nem:601 antennaprofile 3,251.29,0.031
+            line = '%0.1f nem:%d antennaprofile %d,%0.3f,%0.3f\n' % \
+                (time,
+                 nodeid,
+                 ant.ant_num,
+                 ant.az,
+                 ant.el)
+            fd.write(line)
+
+        fd.write('\n')
+
+        fd.flush()

@@ -1,4 +1,4 @@
-# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
+# Copyright (c) 2022,2023 - Adjacent Link LLC, Bridgewater, New Jersey
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,20 +29,3 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # See toplevel COPYING for more information.
-
-from emex.helpers.antennas.sectorhelper import SectorHelper
-from emex.helpers.antennas.defaulthelper import DefaultHelper
-
-
-class AntennaBuilder:
-    def build(self, antennaprofile, configdir):
-        antennatype_name = antennaprofile.antenna.antennatype_name
-
-        if antennatype_name == 'sector':
-            return SectorHelper().build(antennaprofile, configdir)
-        elif antennatype_name == 'ka_band_sector_horn':
-            return DefaultHelper().build(antennaprofile, configdir)
-        elif antennatype_name == 'lhcp_maarten_baert_pagoda_2':
-            return DefaultHelper().build(antennaprofile, configdir)
-        else:
-            raise ValueError(f'Unknown antenna type "{antennatype_name}".')

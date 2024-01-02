@@ -45,7 +45,7 @@ class ScenarioRpcClient:
     API (emexscenario.proto) interactions with a running EMOE. The
     remote endpoint is the emexcontainerd instance running within the
     target EMOE. It's service endpoint is exposed as the 'emexcontainerd'
-    accessor that is advertised in teh startScenarioReply EMEX message
+    accessor that is advertised in the startScenarioReply EMEX message
     from the serving emexd.
     """
     def __init__(self, endpoint, list_flows_flag=True):

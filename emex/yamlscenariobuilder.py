@@ -33,6 +33,7 @@
 from collections import defaultdict
 import logging
 import re
+import sys
 from yaml import safe_load
 
 from emex.initialcondition import InitialCondition
@@ -86,6 +87,11 @@ class YamlScenarioBuilder:
         return self._emoe_dict
 
 
+    @property
+    def initial_conditions(self):
+        return self._build_initial_conditions()
+
+
     def build(self, platform_types, antenna_types):
         platforms = self.build_platforms(platform_types)
 
@@ -113,7 +119,6 @@ class YamlScenarioBuilder:
             if labels:
                 for c_name,label in [tok.strip().split('.') for tok in labels.split()]:
                     component_labels[c_name].append(label)
-
 
             platform_type = platformtypes.get(config_platform_type, None)
 
@@ -167,12 +172,13 @@ class YamlScenarioBuilder:
 
             user_config = defaultdict(lambda: [])
 
-            for param_name,value in config.get('parameters', {}).items():
-                user_config[param_name] = value
+            if config.get('parameters'):
+                for param_name,value in config.get('parameters', {}).items():
+                    user_config[param_name] = value
 
-                antennas.append(Antenna(antennaname,
-                                        antennatypes[antennatype],
-                                        user_config))
+            antennas.append(Antenna(antennaname,
+                                    antennatypes[antennatype],
+                                    user_config))
 
         return antennas
 

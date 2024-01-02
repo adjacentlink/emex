@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+# * Neither the name of Adjacent Link LLC nor the names of its
+#   contributors may be used to endorse or promote products derived
+#   from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+import argparse
+import os
+import sys
+from emane_node_director.eelparser import EELParser
+from emex.emoestate import EmoeState
+from emex.yamlscenariobuilder import YamlScenarioBuilder
+from emex.scenariostatemanager import ScenarioStateManager
+from emex.scenariorunner import ScenarioRunner
+from emane_node_director.eelwriter import EELWriter
+from emex.shell2 import Shell2
+from emex.scenariopublisher import ScenarioPublisher
+from emex.emoeerror import EmoeError
+from emex.timestamper import Timestamper
+
+
+def main():
+    usage = '''
+Direct location, orientation and pointing of platforms running in an EMEX EMOE.'''
+
+    parser = argparse.ArgumentParser( \
+                prog='emex-node-director',
+                description=usage,
+                formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument('--latlonstep',
+                        metavar='LATLONSTEP',
+                        type=float,
+                        default=0.001,
+                        help='''The step (in degrees) taken for each
+                        change in latitude or longitude position.
+                        Default: 0.001 degrees.''')
+    parser.add_argument('--altstep',
+                        metavar='ALTSTEP',
+                        type=float,
+                        default=1.0,
+                        help='''The altitude step (in meters) taken
+                        for each change in position. Default: 1
+                        meter.''')
+    parser.add_argument('--anglestep',
+                        metavar='ANGLESTEP',
+                        type=float,
+                        default=0.01,
+                        help='''The angle (in degress), taken for each
+                        elevation, azimuth, pitch, roll, yaw and
+                        antenna pointing steps.  Default: 0.01
+                        degrees.''')
+    parser.add_argument('--timestep',
+                        metavar='TIMESTEP',
+                        type=float,
+                        default=5.0,
+                        help='''When writing the current state to the EEL
+                        format STATEFILE, advance time by TIMESTEP for
+                        each write. Default: 5.0.''')
+    parser.add_argument('--statefile',
+                        metavar='STATEFILE',
+                        default='state.eel',
+                        help='''EEL format file where current state is
+                        written on each invocation of "write"
+                        command. Default: state.eel''')
+    parser.add_argument('--batch',
+                        metavar='BATCHFILE',
+                        default=None,
+                        help='''Run in batch mode. BATCHFILE is a list
+                        of director commands, (one per line) with a
+                        prepended time number that dictates when the
+                        command is issued.''')
+    parser.add_argument('--quiet',
+                        default=False,
+                        action='store_true',
+                        help='Run with quieter output')
+    parser.add_argument('--pathloss',
+                        metavar='ALGORITHM',
+                        choices=['2ray', 'freespace', 'none'],
+                        default='none',
+                        help='''Calculate and send pathloss events
+                        based on current location and antenna pointing
+                        when "2ray" or "freespace" algorithms are
+                        specified.  Pathloss events are not sent when
+                        "none" (the default).''')
+    parser.add_argument('--frequency',
+                        metavar='FREQUENCY',
+                        type=int,
+                        default=2347000000,
+                        help='''Specifies the frequency (Hz) at which
+                        pathloss values are computed when the
+                        frequency argument is set to freespace.''')
+    parser.add_argument('--emoename',
+                        metavar='NAME',
+                        default=None,
+                        help='''Specify a name for the EMOE. If none
+                        is specified a data stamp name will be generated.''')
+    parser.add_argument('--endpoint',
+                        metavar='ENDPOINT',
+                        default='127.0.0.1:49901',
+                        help='''emexd endpoint (address:port)
+                        for creating the emoe.''')
+    parser.add_argument('inputfile',
+                        metavar='YAMLFILE',
+                        help='''An EMEX yaml file used to determine
+                        the nodes to be controlled. The director can
+                        also step nodes through the timestepped states
+                        when more than one timestamp is present.''')
+
+    args = parser.parse_args()
+
+    # inputfile must be present
+    if not os.path.exists(args.inputfile):
+        print('EEL file "{args.inputfile}" does not exist', file=sys.stderr)
+        exit(1)
+
+    addr,port = args.endpoint.split(':')
+
+    if not args.emoename:
+        args.emoename = f'emoe.{Timestamper().next_timestamp.emoe_id}'
+
+    try:
+        builder = YamlScenarioBuilder(args.inputfile)
+
+        state_manager = \
+            ScenarioStateManager(builder.initial_conditions, builder.events)
+
+        # translate yaml to node_states
+        runner = ScenarioRunner((addr,int(port)), args.emoename, builder)
+
+        check_reply,check_message = runner.check()
+
+        if not check_reply:
+            print(f'failed check_reply with "{check_message}"')
+
+            return check_reply,check_message
+
+        # start scenario and connect
+        runner.start_emoe()
+
+        emoe_entry = runner.wait_for_emoe_running()
+
+        _,emoe_endpoint = runner.get_endpoints(emoe_entry)
+
+        if not emoe_endpoint:
+            raise EmoeError(f'No emexcontainerd accessor found for {emoe_entry.emoe_name}.')
+        
+        writer = EELWriter()
+
+        publisher = ScenarioPublisher(emoe_endpoint)
+
+        shell = Shell2(
+            state_manager.pov_states,
+            state_manager.antenna_states,
+            publisher,
+            writer,
+            args)
+
+        shell.cmdloop()
+
+    except EmoeError as e:
+        print(e, file=sys.stderr)
+
+
+if __name__=='__main__':
+    main()
