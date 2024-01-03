@@ -69,9 +69,7 @@ class ContainerManager:
 
         self._threads = []
 
-        num_threads = (len(config.allowed_cpus_set)+4) // 5
-
-        for i in range(1,num_threads):
+        for i in range(config.num_container_workers):
             thread = \
                 ContainerWorker(config,
                                 self._dclient,

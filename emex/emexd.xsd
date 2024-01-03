@@ -162,8 +162,17 @@
 		    maxOccurs="1">
           <xs:complexType>
              <xs:attribute name="format"
-                                 type="ContainerDateTimeTagFormat"
-                                 use="required"/>
+                           type="ContainerDateTimeTagFormat"
+                           use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="container-workers"
+                    minOccurs="0"
+                    maxOccurs="1">
+          <xs:complexType>
+             <xs:attribute name="count"
+                           type="xs:unsignedShort"
+                           use="required"/>
           </xs:complexType>
         </xs:element>
 
