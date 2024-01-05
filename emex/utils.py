@@ -261,7 +261,7 @@ def sock_recv_string(sock):
         try:
             bufstr += sock.recv(count-len(bufstr))
         except BlockingIOError as be:
-            logging.error('BlockingIOError in sock_recv_string count={count}: "{be}"')
+            logging.error(f'BlockingIOError in sock_recv_string count={count}: "{be}"')
 
     return struct.unpack(f'{count}s', bufstr)[0]
 
