@@ -257,7 +257,7 @@ class EmoeRuntime:
 
 
     def can_start(self):
-        self._start_attempts -= 1
+        self._start_attempts = max(self._start_attempts-1, -1)
 
         return self._start_attempts >= 0
 
