@@ -37,6 +37,7 @@ import select
 import socket
 import threading
 import time
+import traceback
 
 from emex.emoe import Emoe
 from emex.emoestate import EmoeState
@@ -73,6 +74,49 @@ eventstrs = {
     select.EPOLLWRBAND:'EPOLLWRBAND',
     select.EPOLLMSG:'EPOLLMSG'
 }
+
+
+class LoggedDict:
+    def __init__(self, do_log=False):
+        self._do_log = do_log
+        if self._do_log:
+            logging.info('LoggedEmoesDict.__init__')
+        self._emoes_dict = {}
+
+    def get(self, emoe_name, default):
+        ret = self._emoes_dict.get(emoe_name, default)
+        if self._do_log:
+            logging.info(f'LoggedEmoesDict.get {emoe_name} default:{default} return:{ret}')
+        return ret
+
+    def assign(self, emoe_name, val):
+        if self._do_log:
+            logging.info(f'LoggedEmoesDict.assign {emoe_name} val:{val}')
+        self._emoes_dict[emoe_name] = val
+
+    def pop(self, emoe_name):
+        ret = self._emoes_dict.pop(emoe_name)
+        if self._do_log:
+            logging.info(f'LoggedEmoesDict.pop {emoe_name} return:{ret}')
+        return ret
+
+    def has_key(self, emoe_name):
+        return emoe_name in self._emoes_dict
+
+    def as_dict(self):
+        if self._do_log:
+            logging.info(f'LoggedEmoesDict.as_dict')
+        return self._emoes_dict
+
+    def keys(self):
+        if self._do_log:
+            logging.info(f'LoggedEmoesDict.keys {self._emoes_dict.keys()}')
+        return self._emoes_dict.keys()
+
+    def values(self):
+        if self._do_log:
+            logging.info(f'LoggedEmoesDict.values {self._emoes_dict.values()}')
+        return self._emoes_dict.values()
 
 
 class ScenarioThread(threading.Thread):
@@ -193,7 +237,7 @@ class BatchRunner:
                      f'scenarios, {self._total_trials} total emulations.')
 
         # collection of locally known emoes by state
-        self._emoes_dict = {}
+        self._emoes_dict = LoggedDict(False)
 
         # request these from emexd at startup, needed to build emoes
         self._antennatypes = None
@@ -288,14 +332,14 @@ class BatchRunner:
                 logging.error(f'None cookies for entry={entry}, Ignoring')
                 continue
 
-            local_entry,runner,builder,monitor = emoe_cookie
+            local_entry,runner,builder,monitor,did_stop = emoe_cookie
 
             if not local_entry and not runner:
                 # this is the first report for this emoe, add the entry
                 logging.info(f'{num_entry:3} emoe:{entry.emoe_name} state:{entry.state.name}')
 
                 logging.debug(f'adding2 {entry.emoe_name} to emoes_dict')
-                self._emoes_dict[entry.emoe_name] = (entry,runner,builder,monitor)
+                self._emoes_dict.assign(entry.emoe_name, (entry,runner,builder,monitor,did_stop))
 
             elif entry == local_entry:
                 if entry.state == EmoeState.RUNNING:
@@ -303,8 +347,9 @@ class BatchRunner:
                                  f'eventlog: {runner.log}  is_alive:{runner.is_alive()}')
 
                     # for a continued RUNNING state, stop the emoe when the scenario thread ends
-                    if not runner.is_alive():
-                        logging.info(f'stopping emoe {entry.emoe_name}')
+                    if not runner.is_alive() and not did_stop:
+                        self._emoes_dict.assign(entry.emoe_name, (entry,runner,builder,monitor,True)) # set did_stop to True
+                        logging.debug(f'stopping emoe {entry.emoe_name}')
                         runner.cleanup()
                         runner.join()
                         sock_send_string(self._emexd_sock,
@@ -316,10 +361,10 @@ class BatchRunner:
                 continue
 
             if entry.state > EmoeState.RUNNING:
-                logging.info(f'emoe {entry.emoe_name} transitioned to state {entry.state.name}')
+                logging.debug(f'emoe {entry.emoe_name} transitioned to state {entry.state.name}')
 
             elif entry.state == EmoeState.RUNNING:
-                logging.info(f'emoe {entry.emoe_name} transitioned to state {entry.state.name}')
+                logging.debug(f'emoe {entry.emoe_name} transitioned to state {entry.state.name}')
 
                 emoe_endpoint,otestpoint_endpoint = self._get_endpoints(entry.service_accessors)
 
@@ -336,22 +381,30 @@ class BatchRunner:
                 runner.setDaemon(True)
                 runner.start()
 
-                logging.info(f'started {entry.emoe_name} events thread')
+                logging.debug(f'started {entry.emoe_name} events thread')
 
 
             elif entry.state > EmoeState.QUEUED:
-                logging.info(f'emoe {entry.emoe_name} transitioned to state {entry.state.name}')
+                logging.debug(f'emoe {entry.emoe_name} transitioned to state {entry.state.name}')
 
             # update the local state
-            self._emoes_dict[entry.emoe_name] = (entry,runner,builder,monitor)
+            self._emoes_dict.assign(entry.emoe_name, (entry,runner,builder,monitor,did_stop))
 
-        unreported_emoes = set(self._emoes_dict).difference(processed_emoes)
+        unreported_emoes = set(self._emoes_dict.as_dict()).difference(processed_emoes)
 
         for emoe_name in unreported_emoes:
-            local_entry,runner,builder,monitor = self._emoes_dict.pop(emoe_name)
+            logging.info(f'unreported "{emoe_name}"')
+            local_entry,runner,builder,monitor,did_stop = self._emoes_dict.pop(emoe_name)
 
             logging.info(f'"{emoe_name}" is complete')
 
+
+    def remove_emoe(self, emoe_name):
+        logging.debug(f'remove_emoe "{emoe_name}"')
+
+        if self._emoes_dict.has_key(emoe_name):
+            logging.debug(f'remove_emoe removing "{emoe_name}"')
+            self._emoes_dict.pop(emoe_name)
 
 
     def bump_index(self):
@@ -362,7 +415,9 @@ class BatchRunner:
 
     @property
     def done_starting(self):
-        return self._scenario_index >= self._total_trials
+        ret = self._scenario_index >= self._total_trials
+        logging.debug(f'done_starting ret: {ret} scenario_index: {self._scenario_index} total_trials: {self._total_trials}')
+        return ret
 
 
     def index_trial(self, bump=False):
@@ -392,7 +447,7 @@ class BatchRunner:
 
         emoe_name = f'{scenario_name}.{(trial+1):03}'
 
-        while not self.done_starting and emoe_name in self._emoes_dict:
+        while not self.done_starting and emoe_name in self._emoes_dict.keys():
             logging.debug(f'next_emoe_name: {emoe_name} already used')
 
             index,trial = self.index_trial(bump=True)
@@ -452,8 +507,9 @@ class BatchRunner:
 
         monitor = Emex(emoe) if self._run_monitor else None
 
-        logging.debug(f'adding1 {emoe_name} to emoes_dict')
-        self._emoes_dict[emoe_name] = (None,None,builder,monitor)
+        if not self._emoes_dict.has_key(emoe_name):
+            logging.debug(f'adding1 {emoe_name} to emoes_dict')
+            self._emoes_dict.assign(emoe_name, (None,None,builder,monitor,False))
 
 
     def _get_endpoints(self, accessors):
@@ -565,17 +621,20 @@ class BatchRunner:
                                 self.start_next_emoe(reply)
 
                         elif isinstance(reply, StartEmoeReply):
-                            logging.debug(f'rx startemoes {reply.emoe_name} {reply.result}')
+                            logging.debug(f'StartEmoeReply {reply.emoe_name} {reply.result}')
 
                             # check for failure
                             if not reply.result:
                                 logging.error(f'emoe "{reply.emoe_name}" failed to start with error "{reply.message}"')
-                                self._emoes_dict.pop(reply.emoe_name)
+                                self.remove_emoe(reply.emoe_name)
 
                                 self.bump_index()
 
                         elif isinstance(reply, StopEmoeReply):
-                            logging.debug(f'rx stopemoes {reply.emoe_name} {reply.result}')
+                            logging.debug(f'StopEmoeReplly {reply.emoe_name} {reply.result}')
+
+                            self.remove_emoe(reply.emoe_name)
+
 
                         elif isinstance(reply, EmoeStateTransitionEvent):
                             # just report this, they'll only be seen if emexd state-messages
@@ -613,8 +672,9 @@ class BatchRunner:
                         logging.debug(f'unhandled: {self._socket_names.get(fileno, fileno)}, '
                                       f'{self._event_name(event)}')
 
-        #except Exception as e:
-        #    logging.error(f'Exception: {e}')
+        except Exception as e:
+            logging.error(traceback.format_exc())
+            logging.error(f'Exception: {e}')
 
         finally:
             self._stop_timer = True
@@ -622,8 +682,9 @@ class BatchRunner:
 
 
     def close(self):
-        for _,runner,_,_ in self._emoes_dict.values():
-            runner.cleanup()
+        for _,runner,_,_,_ in self._emoes_dict.values():
+            if runner:
+                runner.cleanup()
 
         logging.info('close start')
         self._epoll.unregister(self._timer_listen_sock.fileno())

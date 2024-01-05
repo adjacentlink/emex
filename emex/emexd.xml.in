@@ -55,4 +55,10 @@
        accordingly. When set to none, the EMOE container name is the EMOE
        name set by the client. prefix is the default. -->
   <container-datetime-tag format="prefix"/>
+
+  <!-- The number of container threads dedicated to starting and stopping
+       EMOE containers. More than 1 thread allows for starting and stopping
+       containers in parallel which may increase the number of scenarios
+       that can be executed within a given time period. -->
+  <container-workers count="1"/>
 </emexd>

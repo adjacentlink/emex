@@ -34,6 +34,7 @@
 from queue import Queue
 import re
 import socket
+from threading import Lock
 
 import docker
 import logging
@@ -54,26 +55,33 @@ class ContainerManager:
 
         self._dclient.images.get(self._config.docker_image)
 
-        self._worker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._worker_in_q = Queue()
+
+        self._worker_out_q = Queue()
+
+        worker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         logging.info(f'Connecting container worker socket to {container_worker_connect_endpoint}')
 
-        self._worker_socket.connect(container_worker_connect_endpoint)
+        worker_socket.connect(container_worker_connect_endpoint)
 
-        self._worker_in_q = Queue()
-        self._worker_out_q = Queue()
+        socket_lock = Lock()
 
-        self._thread = \
-            ContainerWorker(config,
-                            self._dclient,
-                            self._hpm,
-                            self._worker_socket,
-                            self._worker_in_q,
-                            self._worker_out_q)
+        self._threads = []
 
-        self._thread.setName('thread_worker')
-        self._thread.setDaemon(True)
-        self._thread.start()
+        for i in range(config.num_container_workers):
+            thread = \
+                ContainerWorker(config,
+                                self._dclient,
+                                self._worker_in_q,
+                                self._worker_out_q,
+                                worker_socket,
+                                socket_lock)
+
+            thread.setName(f'thread_worker{i}')
+            thread.setDaemon(True)
+            thread.start()
+            self._threads.append(thread)
 
 
     def start(self, emoe_rt, listenaddress, listenport):
@@ -163,7 +171,7 @@ class ContainerManager:
 
     def stop_and_remove(self, container):
         if not container:
-            logger.error('ContainerManager stop_and_remove called with "None" '
+            logging.error('ContainerManager stop_and_remove called with "None" '
                          'container. Ignoring.')
 
             return
@@ -203,10 +211,14 @@ class ContainerManager:
 
                             logging.debug(f'stop container 3 {c.name} {c.status}')
 
-                    except:
-                        logging.error('In ContainerManager.stop_all_emex_containers_synchronous:')
-
-                        logging.error(traceback.format_exc())
+                    except Exception as e:
+                        if 'already in progress' in e:
+                            logging.info(f'ContainerManager: "{c.name}" already stopping.')
+                        elif 'No such container' in e:
+                            logging.info(f'ContainerManager: "{c.name}" not found, may not have started yet.')
+                        else:
+                            logging.error(f'In ContainerManager.stop_all_emex_containers_synchronous: '
+                                          f'{traceback.format_exc()}')
 
 
     def _handle_port_collision(self, message, emoe_rt, allocated_ports):

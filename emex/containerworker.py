@@ -57,17 +57,17 @@ class ContainerWorker(Thread):
     def __init__(self,
                  config,
                  docker_client,
-                 host_port_manager,
-                 worker_socket,
                  worker_in_q,
-                 worker_out_q):
+                 worker_out_q,
+                 worker_socket,
+                 socket_lock):
         super().__init__()
         self._config = config
         self._dclient = docker_client
-        self._hpm = host_port_manager
-        self._worker_socket = worker_socket
         self._worker_in_q = worker_in_q
         self._worker_out_q = worker_out_q
+        self._worker_socket = worker_socket
+        self._socket_lock = socket_lock
         self._start_seq = 1
         self._stop_seq = 1
 
@@ -76,103 +76,102 @@ class ContainerWorker(Thread):
         loglevel = self._config.emexcontainerd_loglevel
 
         while True:
-            time.sleep(1)
+            item  = self._worker_in_q.get()
 
-            while not self._worker_in_q.empty():
-                item  = self._worker_in_q.get()
+            command = item[0]
 
-                command = item[0]
+            if command == 'start':
+                emoe_rt, cpus_str, ports, listenaddress, listenport = item[1:]
 
-                if command == 'start':
-                    emoe_rt, cpus_str, ports, listenaddress, listenport = item[1:]
+                try:
+                    # start the container
+                    container = self._dclient.containers.run(
+                        image=self._config.docker_image,
+                        name=emoe_rt.container_name,
+                        privileged=True,
+                        cpuset_cpus=cpus_str,
+                        environment={'EMEXD_LISTEN_ADDRESS': listenaddress,
+                                     'EMEXD_LISTEN_PORT': str(listenport),
+                                     'EMOE_ID':emoe_rt.emoe_id},
+                        volumes={f'{emoe_rt.workdir}':{'bind':'/tmp/etce', 'mode':'rw'}},
+                        ports=ports,
+                        detach=True,
+                        command=f'/opt/run-emexcontainerd.sh -l {loglevel}')
 
-                    try:
-                        # start the container
-                        container = self._dclient.containers.run(
-                            image=self._config.docker_image,
-                            name=emoe_rt.container_name,
-                            privileged=True,
-                            cpuset_cpus=cpus_str,
-                            environment={'EMEXD_LISTEN_ADDRESS': listenaddress,
-                                         'EMEXD_LISTEN_PORT': str(listenport),
-                                         'EMOE_ID':emoe_rt.emoe_id},
-                            volumes={f'{emoe_rt.workdir}':{'bind':'/tmp/etce', 'mode':'rw'}},
-                            ports=ports,
-                            detach=True,
-                            command=f'/opt/run-emexcontainerd.sh -l {loglevel}')
+                    # pause and then confirm the new container is
+                    # in the list of running containers
+                    time.sleep(1)
 
-                        # pause and then confirm the new container is
-                        # in the list of running containers
-                        time.sleep(1)
+                    found = False
+                    for c in self._dclient.containers.list(all=True):
+                        if c.name == emoe_rt.container_name:
+                            found = True
 
-                        found = False
-                        for c in self._dclient.containers.list(all=True):
-                            if c.name == emoe_rt.container_name:
-                                found = True
-
-                        if found:
-                            self._worker_out_q.put(
-                                ('start',True,'ok',emoe_rt,ports,container))
-                        else:
-                            message = \
-                                f'Failed to find emoe container "{emoe_rt.container_name}" in list of ' \
-                                f'running emoes after successful start.'
-
-                            self._worker_out_q.put(
-                                ('start',False,message,emoe_rt,ports,listenaddress,listenport))
-
-                    except docker.errors.APIError as e:
-                        message = str(e)
+                    if found:
+                        self._worker_out_q.put(
+                            ('start',True,'ok',emoe_rt,ports,container))
+                    else:
+                        message = \
+                            f'Failed to find emoe container "{emoe_rt.container_name}" in list of ' \
+                            f'running emoes after successful start.'
 
                         self._worker_out_q.put(
                             ('start',False,message,emoe_rt,ports,listenaddress,listenport))
 
-                    except Exception as e:
-                        message = str(e)
+                except docker.errors.APIError as e:
+                    message = str(e)
 
-                        self._worker_out_q.put(
-                            ('start',False,message,emoe_rt,ports,listenaddress,listenport))
+                    self._worker_out_q.put(
+                        ('start',False,message,emoe_rt,ports,listenaddress,listenport))
 
-                    finally:
-                        # signal the emexd event loop - doesn't really matter what we send
-                        ret = f'start {self._start_seq} emoe "{emoe_rt.emoe.name}"'
+                except Exception as e:
+                    message = str(e)
 
+                    self._worker_out_q.put(
+                        ('start',False,message,emoe_rt,ports,listenaddress,listenport))
+
+                finally:
+                    # signal the emexd event loop - doesn't really matter what we send
+                    ret = f'start {self._start_seq} emoe "{emoe_rt.emoe.name}"'
+
+                    with self._socket_lock:
                         self._worker_socket.send(bytes(ret,'utf-8'))
 
-                        self._start_seq += 1
+                    self._start_seq += 1
 
-                else: # stop
-                    container = item[1]
+            else: # stop
+                container = item[1]
 
-                    message = f'stop {self._stop_seq} {container.name} {container.status}'
+                message = f'stop {self._stop_seq} {container.name} {container.status}'
 
-                    try:
-                        if container.status.lower() in ('created', 'restarting', 'running'):
-                            container.stop()
+                try:
+                    if container.status.lower() in ('created', 'restarting', 'running'):
+                        container.stop()
 
-                            container.remove(force=True)
+                        container.remove(force=True)
 
-                            self._worker_out_q.put(('stop',True,message))
+                        self._worker_out_q.put(('stop',True,message))
 
-                        elif container.status.lower() in ('paused', 'exited'):
-                            container.remove(force=True)
+                    elif container.status.lower() in ('paused', 'exited'):
+                        container.remove(force=True)
 
-                            self._worker_out_q.put(('stop',True,message))
+                        self._worker_out_q.put(('stop',True,message))
 
-                        else:
-                            message = \
-                                f'stop {self._stop_seq} name:{container.name} ' \
-                                f'state:{container.status}, ignoring stop.'
-
-                            self._worker_out_q.put(('stop', False, message))
-
-                    except:
+                    else:
                         message = \
-                            f'stop {self._stop_seq} {container.name} exception: ' \
-                            f'{traceback.format_exc()}'
+                            f'stop {self._stop_seq} name:{container.name} ' \
+                            f'state:{container.status}, ignoring stop.'
 
                         self._worker_out_q.put(('stop', False, message))
 
+                except:
+                    message = \
+                        f'stop {self._stop_seq} {container.name} exception: ' \
+                        f'{traceback.format_exc()}'
+
+                    self._worker_out_q.put(('stop', False, message))
+
+                with self._socket_lock:
                     self._worker_socket.send(bytes(message,'utf-8'))
 
-                    self._stop_seq += 1
+                self._stop_seq += 1

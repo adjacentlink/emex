@@ -96,6 +96,8 @@ class Plugin(BasePlugin):
 
     DEFAULT_CONTAINER_DATETIME_TAG_FORMAT = 'prefix'
 
+    DEFAULT_NUM_CONTAINER_WORKERS = 1
+
     Config = namedtuple('Config', ['client_listen_address',
                                    'client_listen_port',
                                    'container_listen_address',
@@ -107,7 +109,8 @@ class Plugin(BasePlugin):
                                    'emexcontainerd_loglevel',
                                    'stop_all_containers',
                                    'emexdirectory_action',
-                                   'container_datetime_tag_format'])
+                                   'container_datetime_tag_format',
+                                   'num_container_workers'])
 
     def initialize(self, ctx, configuration_file):
         """Initializes the container daemon.
@@ -317,6 +320,8 @@ class Plugin(BasePlugin):
 
         container_datetime_tag_format = Plugin.DEFAULT_CONTAINER_DATETIME_TAG_FORMAT
 
+        num_container_workers = Plugin.DEFAULT_NUM_CONTAINER_WORKERS
+
         if not configuration_file:
             config = Plugin.Config(client_listen_address,
                                    client_listen_port,
@@ -329,7 +334,8 @@ class Plugin(BasePlugin):
                                    emexcontainerd_loglevel,
                                    stop_all_containers,
                                    emexdirectory_action,
-                                   container_datetime_tag_format)
+                                   container_datetime_tag_format,
+                                   num_container_workers)
 
             self._log_config(config)
 
@@ -440,6 +446,11 @@ class Plugin(BasePlugin):
         if container_datetime_tag_elems:
             container_datetime_tag_format = container_datetime_tag_elems[0].get('format')
 
+        num_container_workers_elems = root.xpath('/emexd/container-workers')
+
+        if num_container_workers_elems:
+            num_container_workers = int(num_container_workers_elems[0].get('count'))
+
         config = Plugin.Config(client_listen_address,
                                client_listen_port,
                                container_listen_address,
@@ -451,7 +462,8 @@ class Plugin(BasePlugin):
                                emexcontainerd_loglevel,
                                stop_all_containers,
                                emexdirectory_action,
-                               container_datetime_tag_format)
+                               container_datetime_tag_format,
+                               num_container_workers)
 
         self._log_config(config)
 
@@ -484,6 +496,8 @@ class Plugin(BasePlugin):
         logging.info(f'emexdirectory_action={config.emexdirectory_action}')
 
         logging.info(f'container_datetime_tag_format={config.container_datetime_tag_format}')
+
+        logging.info(f'num_container_workers={config.num_container_workers}')
 
 
     def _unpack_emoe(self, emoe_proto):

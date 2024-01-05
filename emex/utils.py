@@ -242,6 +242,8 @@ def load_monitor(monitor_name):
 
 
 def sock_send_string(sock, in_string):
+    logging.debug(f'sock_send_string {len(in_string)}')
+
     format_str = '!I%ds' % len(in_string)
 
     bufstr = struct.pack(format_str, len(in_string), in_string)
@@ -252,7 +254,16 @@ def sock_send_string(sock, in_string):
 def sock_recv_string(sock):
     (count,) = struct.unpack('!I', sock.recv(4))
 
-    return struct.unpack('%ds' % count, sock.recv(count, socket.MSG_WAITALL))[0]
+    bufstr = bytes()
+
+    while len(bufstr) < count:
+        logging.debug(f'sock_recv_string {count-len(bufstr)}')
+        try:
+            bufstr += sock.recv(count-len(bufstr))
+        except BlockingIOError as be:
+            logging.error(f'BlockingIOError in sock_recv_string count={count}: "{be}"')
+
+    return struct.unpack(f'{count}s', bufstr)[0]
 
 
 def get_emex_data_resource_file_path(resource):
