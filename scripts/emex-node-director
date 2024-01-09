@@ -103,12 +103,13 @@ Direct location, orientation and pointing of platforms running in an EMEX EMOE.'
                         help='Run with quieter output')
     parser.add_argument('--pathloss',
                         metavar='ALGORITHM',
-                        choices=['2ray', 'freespace', 'none'],
+                        choices=['2ray', 'freespace', 'precomputed', 'none'],
                         default='none',
-                        help='''Calculate and send pathloss events
-                        based on current location and antenna pointing
-                        when "2ray" or "freespace" algorithms are
-                        specified.  Pathloss events are not sent when
+                        help='''Issue pathloss events in coordination with locations.
+                        Pathloss is calculated from the distance betwen nodes
+                        using the same 2ray or freespace algorithms as in emane when
+                        set to those values. For precomputed, pathloss sentences are
+                        read from the eel file. Pathloss events are not issued for
                         "none" (the default).''')
     parser.add_argument('--frequency',
                         metavar='FREQUENCY',
@@ -179,6 +180,7 @@ Direct location, orientation and pointing of platforms running in an EMEX EMOE.'
         shell = Shell2(
             state_manager.pov_states,
             state_manager.antenna_states,
+            state_manager.pathloss_states,
             publisher,
             writer,
             args)

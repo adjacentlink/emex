@@ -49,7 +49,7 @@ class Shell2(cmd.Cmd):
     intro = 'EMANE Node Director. Type help or ? to list commands.\n'
     prompt = 'director> '
 
-    def __init__(self, pov_states, antenna_pointing_states, publisher, writer, args):
+    def __init__(self, pov_states, antenna_pointing_states, pathloss_states, publisher, writer, args):
         cmd.Cmd.__init__(self)
 
         self._publisher = publisher
@@ -60,7 +60,7 @@ class Shell2(cmd.Cmd):
 
         self._pointer = AntennaPointer(antenna_pointing_states, self._tracker)
 
-        self._pathloss_calc = PathlossCalculator(args, self._tracker, self._pointer)
+        self._pathloss_calc = PathlossCalculator(args, self._tracker, self._pointer, pathloss_states)
 
         self._traffic_flows = {}
 
@@ -720,8 +720,6 @@ class Shell2(cmd.Cmd):
                 return
 
         self._tracker.step(steps)
-
-        self._pointer.step(steps)
 
         self._send()
 

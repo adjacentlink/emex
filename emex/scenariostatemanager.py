@@ -37,7 +37,7 @@ from emane_node_director.dataframewrapper import DataFrameWrapper
 
 class ScenarioStateManager:
     def __init__(self, initial_conditions, events):
-        self._pov_states,self._antenna_states = \
+        self._pov_states,self._antenna_states,self._pathloss_states = \
             self._events_to_states(initial_conditions, events)
 
     @property
@@ -48,11 +48,16 @@ class ScenarioStateManager:
     def antenna_states(self):
         return self._antenna_states
 
+    @property
+    def pathloss_states(self):
+        return self._pathloss_states
+
 
     def _events_to_states(self, initial_conditions, events):
         pov_states,plt_name_to_id = self._pov_events_to_states(initial_conditions, events)
         antenna_states = self._antenna_events_to_states(initial_conditions, events, plt_name_to_id)
-        return pov_states,antenna_states
+        pathloss_states = self._pathloss_events_to_states(initial_conditions, events, plt_name_to_id)
+        return pov_states,antenna_states,pathloss_states
 
     def _pov_events_to_states(self, initial_conditions, events):
         states = []
@@ -200,3 +205,69 @@ class ScenarioStateManager:
                           for evttime,state_df in states]
 
         return wrapped_states
+
+
+    def _pathloss_events_to_states(self, initial_conditions, events, plt_name_to_id):
+        states = []
+
+        column_names=['node1id','node1','node2id','node2','pathloss','distance']
+
+        plt_id_to_name = {id:name for name,id in plt_name_to_id.items()}
+        plt_id = max(plt_id_to_name) if plt_id_to_name else 1
+
+        rows = {}
+
+        if initial_conditions:
+            for ic in initial_conditions:
+                if not ic.pathlosses:
+                    continue
+
+                if not ic.platform_name in plt_name_to_id:
+                    plt_name_to_id[ic.platform_name] = plt_id
+                    plt_id_to_name[plt_id] = ic.platform_name
+                    plt_id += 1
+
+                for pathloss in ic.pathlosses:
+                    rows[(ic.platform_name,pathloss.remote_platform)] = (
+                        plt_name_to_id[ic.platform_name],
+                        ic.platform_name,
+                        plt_name_to_id[pathloss.remote_platform],
+                        pathloss.remote_platform,
+                        pathloss.pathloss,
+                        float('nan')
+                    )
+
+            state_df = DataFrame(rows.values(), columns=column_names)
+            state_df.set_index(['node1id','node2id'], inplace=True)
+            state_df.sort_index(inplace=True)
+            states.append((float('-inf'), state_df))
+
+        for eventtime,eventdict in sorted(events.items()):
+            for eventtype,eventlist in eventdict.items():
+                if not eventtype == 'pathloss':
+                    continue
+
+                # build data frame
+                for plt_name,pathlosses in eventlist:
+                    if not plt_name in plt_name_to_id:
+                        plt_name_to_id[plt_name] = plt_id
+                        plt_id_to_name[plt_id] = plt_name
+                        plt_id += 1
+
+                    for pathloss in pathlosses:
+                        rows[(plt_name,pathloss.remote_platform)] = (
+                            plt_name_to_id[plt_name],
+                            plt_name,
+                            plt_name_to_id[pathloss.remote_platform],
+                            pathloss.remote_platform,
+                            pathloss.pathloss,
+                            float('nan')
+                        )
+
+            state_df = DataFrame(rows.values(), columns=column_names)
+            state_df.set_index(['node1id','node2id'], inplace=True)
+            state_df.sort_index(inplace=True)
+            states.append((eventtime, state_df))
+
+        return states
+    
