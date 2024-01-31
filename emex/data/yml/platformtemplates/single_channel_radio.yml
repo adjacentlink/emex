@@ -1,0 +1,11 @@
+name: single_channel_radio
+type: platform_template
+description:
+    The Single Platform Container consists of one container running
+    one waveform.
+components:
+    r1:
+        type: waveform
+        traffic_endpoint: true
+        testpoint_publisher: true
+        description: The single radio waveform to run.

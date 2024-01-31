@@ -1,0 +1,137 @@
+name: demo.rfpipe.events
+description: |
+    Four rfpipe nodes in a square with a sensor node at the center.
+    
+            1 --- 2
+            |     |
+            |  s  |
+            |     |
+            4 --- 3
+    
+    node 1, 3 and 4 are configured with a directional antenna,
+    "sector_60_by_30_3dB" and node 2 has an omni with 20dB gain,
+    "omni_20.0".
+
+    While the node locations determine propagation delays between
+    nodes, the demo is configured with propagationmodel=precomputed,
+    which means the pathloss between nodes is set by the intial_conditions
+    and scenario "pathloss" statements explicitly set the channel
+    loss between nodes. This contrasts to "freespace", the default
+    progagation model where pathloss is deterimend by inter-node
+    distance and the transmitter frequency. The pathloss is set to
+    90dB along the sides of the square and 120dB along the diagonals.
+
+    rfpipe-001 and rfpipe-003 are initially pointed towards
+    rfpipe-002.  rfpipe-004 is pointed towards rfpipe-003, which will
+    not receive it (since it is pointing north).
+
+    T=20 set all nodes to transmit multicast to all other nodes times
+         per second with randomized transmit times.
+
+    T=40 start a unicast traffic flow from rfpipe-001 to rfpipe-002 and
+         antenna pointing are changed so rfpipe-001 and rfpipe-003 are
+         pointed towards rfpipe-004. rfpipe-004 is pointed diagonally
+         across the square towards rfpipe-002.
+
+    T=60 the pathloss between rfpipe-001 and rfpipe-004 is increased to
+         200 to break the link.
+
+    T=80 all nodes move one position clockwise. Antenna pointings are
+         changed so that all nodes point at rfpipe-002.
+
+    T=110 all flows are stopped
+
+    T=120 end the scenario
+
+emoe:
+    antennas:
+        sector_60_by_30_3dB:
+            type: sector
+            parameters:
+                gain: 3.0
+                horizontal_beamwidth: 60.0
+                vertical_beamwidth: 30.0
+    platforms:
+        rfpipe-001:
+            type: scr_rfpipe
+            parameters:
+                r1.rm.rxfrequency: 2050000000
+                r1.rm.txfrequency: 2050000000
+                r1.rm.txpower: 20.0
+                r1.phy.propagationmodel: precomputed
+                r1.phy.antenna0: sector_60_by_30_3dB
+        rfpipe-002:
+            type: scr_rfpipe
+            parameters:
+                r1.rm.rxfrequency: 2050000000
+                r1.rm.txfrequency: 2050000000
+                r1.rm.txpower: 20.0
+                r1.phy.propagationmodel: precomputed
+                r1.phy.antenna0: omni_20.0
+        rfpipe-003:
+            type: scr_rfpipe
+            parameters:
+                r1.rm.rxfrequency: 2050000000
+                r1.rm.txfrequency: 2050000000
+                r1.rm.txpower: 20.0
+                r1.phy.propagationmodel: precomputed
+                r1.phy.antenna0: sector_60_by_30_3dB
+                r1.phy.antenna0_east: 5
+        rfpipe-004:
+            type: scr_rfpipe
+            parameters:
+                r1.rm.rxfrequency: 2050000000
+                r1.rm.txfrequency: 2050000000
+                r1.rm.txpower: 20.0
+                r1.phy.propagationmodel: precomputed
+                r1.phy.antenna0: sector_60_by_30_3dB
+                r1.phy.antenna0_north: 10
+        sensor-001:
+            type: h_spectrum_monitor
+            parameters:
+                r1.phy.propagationmodel: precomputed
+
+    initial_conditions:
+        pov: |
+            rfpipe-001  37.005 -109.050 3.0
+            rfpipe-002  37.005 -109.040 3.0
+            rfpipe-003  36.995 -109.040 3.0
+            rfpipe-004  36.995 -109.050 3.0
+            sensor-001  37.000 -109.045 3.0
+        pathloss: |
+            rfpipe-001  rfpipe-002:90 rfpipe-003:120 rfpipe-004:90  sensor-001:80
+            rfpipe-002                rfpipe-003:90  rfpipe-004:120 sensor-001:80
+            rfpipe-003                               rfpipe-004:90  sensor-001:80
+            rfpipe-004                                              sensor-001:80
+        antenna_pointing: |
+            rfpipe-001  90.0 0.0
+            rfpipe-003   0.0 0.0
+            rfpipe-004  90.0 0.0
+
+
+scenario:
+    20.0: |
+        flow_on name=SA source=rfpipe-* destination=rfpipe-* proto=multicast ttl=4 periodic 5.0 512
+    40.0: |
+        flow_on name=flow1 source=rfpipe-001 destination=rfpipe-002 proto=udp periodic 10.0 256
+        antenna_pointing rfpipe-001  180.0 0.0
+        antenna_pointing rfpipe-003  270.0 0.0
+        antenna_pointing rfpipe-004   45.0 0.0
+    60.0: |
+        pathloss  rfpipe-001  rfpipe-002:90 rfpipe-003:120 rfpipe-004:120 sensor-001:80
+        pathloss  rfpipe-002                rfpipe-003:90  rfpipe-004:120 sensor-001:80
+        pathloss  rfpipe-003                               rfpipe-004:90  sensor-001:80
+        pathloss  rfpipe-004                                              sensor-001:80
+    80.0: |
+        pov rfpipe-004  37.005 -109.050 3.0
+        pov rfpipe-001  37.005 -109.040 3.0
+        pov rfpipe-002  36.995 -109.040 3.0
+        pov rfpipe-003  36.995 -109.050 3.0
+        antenna_pointing rfpipe-001  180.0 0.0
+        antenna_pointing rfpipe-003   90.0 0.0
+        antenna_pointing rfpipe-004  135.0 0.0
+    110.0: |
+        flow_off name=SA
+        flow_off name=flow1
+    120.0: |
+        end

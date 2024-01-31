@@ -1,0 +1,159 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+# * Neither the name of Adjacent Link LLC nor the names of its
+#   contributors may be used to endorse or promote products derived
+#   from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# See toplevel COPYING for more information.
+
+from argparse import ArgumentParser
+import daemon
+import daemon.pidfile
+import os
+import pathlib
+import signal
+import sys
+import traceback
+
+import logging
+
+from emex.monitors.utils.tagmap import parse_tag_mapfile
+from emex.monitors.utils.subscriber import Subscriber
+from emex.monitors.utils.sqlitewriter import SqliteWriter
+
+
+parser = ArgumentParser()
+
+parser.add_argument('--tag-map',
+                    type=str,
+                    help='tag map XML file.')
+
+parser.add_argument('--verbose',
+                    '-v',
+                    action='store_true',
+                    help='verbose output [default: %(default)s]')
+
+parser.add_argument("--pid-file",
+                    type=str,
+                    default=None,
+                    help="write pid file")
+
+parser.add_argument("--daemonize",
+                    "-d",
+                    action="store_true",
+                    dest="daemonize",
+                    help="daemonize application [default: %(default)s]")
+
+parser.add_argument('--log-file',
+                    type=str,
+                    metavar='FILE',
+                    help='log file.')
+
+parser.add_argument('--log-level',
+                    type=str,
+                    metavar='LEVEL',
+                    choices=['critical',
+                             'error',
+                             'warning',
+                             'info',
+                             'debug',
+                             'notset'],
+                    default='info',
+                    help='log level [default: %(default)s].')
+
+parser.add_argument('--relative-timestamp',
+                    action='store_true',
+                    help='Display timestamps relative to the first testpoint report time.')
+
+parser.add_argument('otestpointendpoint',
+                    type=str,
+                    help='OpenTestPoint publish endpoint.')
+parser.add_argument('outputfile',
+                    type=str,
+                    help='sqlite db output file.')
+
+args = parser.parse_args()
+
+if args.daemonize:
+    args.verbose = False
+
+tag_map = parse_tag_mapfile(args.tag_map)
+
+subscriber = None
+
+pid_file_context = None
+
+if args.pid_file != None:
+    pid_file_context = daemon.pidfile.PIDLockFile(args.pid_file)
+
+if args.log_file != None:
+    args.log_file = pathlib.Path(args.log_file).absolute()
+
+if args.outputfile != None:
+    args.outputfile = pathlib.Path(args.outputfile).absolute()
+
+
+def shutdown_handler(signum,frame):
+    if subscriber != None:
+        print('shutdown')
+
+        subscriber.stop()
+
+
+def do_main():
+    global subscriber
+
+    logging.basicConfig(filename=args.log_file,
+                        filemode='w',
+                        format='%(asctime)s.%(msecs)03d %(levelname)s: %(message)s',
+                        datefmt='%H:%M:%S',
+                        level=getattr(logging,args.log_level.upper()))
+    try:
+        writer = SqliteWriter(args.outputfile, args.verbose)
+
+        subscriber = Subscriber(args.otestpointendpoint, tag_map, args.relative_timestamp)
+
+        subscriber.run(writer.process_dataframes)
+
+    except Exception as e:
+        print(e, file=sys.stderr)
+        print('bye', file=sys.stderr)
+
+
+
+with daemon.DaemonContext(pidfile=pid_file_context,
+                          detach_process=args.daemonize,
+                          signal_map={signal.SIGINT:shutdown_handler,
+                                      signal.SIGQUIT:shutdown_handler},
+                          stdout=None if args.daemonize else sys.stdout,
+                          stderr=None if args.daemonize else sys.stderr):
+    try:
+        do_main()
+    except:
+        print(traceback.format_exc())

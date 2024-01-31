@@ -1,0 +1,7 @@
+<probe-emane-spectrum-tools-Monitor address="127.0.0.1" port="47000" nem="${emane.nemid}">
+  <probes>
+    <EMANE.Spectrum.Tools.Monitor.Counters.General enable="no"/>
+    <EMANE.Spectrum.Tools.Monitor.Tables.Events enable="yes"/>
+    <EMANE.Spectrum.Tools.Monitor.Tables.Status enable="no"/>
+  </probes>
+</probe-emane-spectrum-tools-Monitor>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nem SYSTEM "file:///usr/share/emane/dtd/nem.dtd">
+
+<nem>
+  <transport definition="transvirtual.xml"/>
+  <mac definition="mac.xml"/>
+  <phy>
+    <param name="txpower"                  value="${rm.txpower}"/>
+    <param name="frequency"                value="${rm.txfrequency}"/>
+    <param name="frequencyofinterest"      value="${rm.rxfrequency}"/>
+    <param name="bandwidth"                value="${rm.bandwidth}"/>
+    <param name="subid"                    value="${phy.subid}"/>
+    <param name="fixedantennagainenable"   value="${phy.fixedantennagainenable}"/>
+    <param name="fixedantennagain"         value="${phy.fixedantennagain}"/>
+    <param name="propagationmodel"         value="${phy.propagationmodel}"/>
+    <param name="noisemode"                value="all"/>
+    <param name="systemnoisefigure"        value="4.0"/>
+  </phy>
+</nem>

@@ -1,0 +1,245 @@
+name: demo.lte.handoff
+description: |
+    Two ues and two enbs. ue 1 moves from enb 1 cell to enb 2 cell and back.
+    ue 2 stays in enb 2 throughout. This is an example of a scenario
+    with the EMANE physical layer propagationmodel set to "precomputed",
+    pathloss is set directly between the nodes rather than being calculated
+    by node distances. Because no pov events are issued the nodes DO NOT
+    show up on the emane node view.
+
+emoe:
+    platforms:
+        lteenb-001:
+            type: bs_lte.enb
+            parameters:
+                r1.rm.resourceblocktxpower: 0.0
+                r1.phy.propagationmodel: precomputed
+        lteenb-002:
+            type: bs_lte.enb
+            parameters:
+                r1.rm.resourceblocktxpower: 0.0
+                r1.phy.propagationmodel: precomputed
+        lteepc-001:
+            type: h_lte.epc
+        lteue-001:
+            type: scr_lte.ue
+            parameters:
+                r1.rm.resourceblocktxpower: 0.0
+                r1.phy.propagationmodel: precomputed
+        lteue-002:
+            type: scr_lte.ue
+            parameters:
+                r1.rm.resourceblocktxpower: 0.0
+                r1.phy.propagationmodel: precomputed
+
+    initial_conditions:
+        pathloss: |
+            lteenb-001 lteue-001:100 lteue-002:125 lteenb-002:130
+            lteenb-002 lteue-001:125 lteue-002:100
+            lteue-001 lteue-002:125
+
+scenario:
+    30.0: |
+        flow_on name=SA_up   source=lteue-*  destination=lteepc-* proto=udp periodic 5.0 100
+        flow_on name=SA_down source=lteepc-* destination=lteue-* proto=udp periodic 5.0 100
+    35.0: |
+        pathloss lteue-001 lteenb-001:101
+        pathloss lteue-001 lteenb-002:124
+        pathloss lteue-001 lteue-002:124
+    40.0: |
+        pathloss lteue-001 lteenb-001:102
+        pathloss lteue-001 lteenb-002:123
+        pathloss lteue-001 lteue-002:123
+    45.0: |
+        pathloss lteue-001 lteenb-001:103
+        pathloss lteue-001 lteenb-002:122
+        pathloss lteue-001 lteue-002:122
+    50.0: |
+        pathloss lteue-001 lteenb-001:104
+        pathloss lteue-001 lteenb-002:121
+        pathloss lteue-001 lteue-002:121
+    55.0: |
+        pathloss lteue-001 lteenb-001:105
+        pathloss lteue-001 lteenb-002:120
+        pathloss lteue-001 lteue-002:120
+    60.0: |
+        pathloss lteue-001 lteenb-001:106
+        pathloss lteue-001 lteenb-002:119
+        pathloss lteue-001 lteue-002:119
+    65.0: |
+        pathloss lteue-001 lteenb-001:107
+        pathloss lteue-001 lteenb-002:118
+        pathloss lteue-001 lteue-002:118
+    70.0: |
+        pathloss lteue-001 lteenb-001:108
+        pathloss lteue-001 lteenb-002:117
+        pathloss lteue-001 lteue-002:117
+    75.0: |
+        pathloss lteue-001 lteenb-001:109
+        pathloss lteue-001 lteenb-002:116
+        pathloss lteue-001 lteue-002:116
+    80.0: |
+        pathloss lteue-001 lteenb-001:110
+        pathloss lteue-001 lteenb-002:115
+        pathloss lteue-001 lteue-002:115
+    85.0: |
+        pathloss lteue-001 lteenb-001:111
+        pathloss lteue-001 lteenb-002:114
+        pathloss lteue-001 lteue-002:114
+    90.0: |
+        pathloss lteue-001 lteenb-001:112
+        pathloss lteue-001 lteenb-002:113
+        pathloss lteue-001 lteue-002:113
+    95.0: |
+        pathloss lteue-001 lteenb-001:113
+        pathloss lteue-001 lteenb-002:112
+        pathloss lteue-001 lteue-002:112
+    100.0: |
+        pathloss lteue-001 lteenb-001:114
+        pathloss lteue-001 lteenb-002:111
+        pathloss lteue-001 lteue-002:111
+    105.0: |
+        pathloss lteue-001 lteenb-001:115
+        pathloss lteue-001 lteenb-002:110
+        pathloss lteue-001 lteue-002:110
+    110.0: |
+        pathloss lteue-001 lteenb-001:116
+        pathloss lteue-001 lteenb-002:109
+        pathloss lteue-001 lteue-002:109
+    115.0: |
+        pathloss lteue-001 lteenb-001:117
+        pathloss lteue-001 lteenb-002:108
+        pathloss lteue-001 lteue-002:108
+    120.0: |
+        pathloss lteue-001 lteenb-001:118
+        pathloss lteue-001 lteenb-002:107
+        pathloss lteue-001 lteue-002:107
+    125.0: |
+        pathloss lteue-001 lteenb-001:119
+        pathloss lteue-001 lteenb-002:106
+        pathloss lteue-001 lteue-002:106
+    130.0: |
+        pathloss lteue-001 lteenb-001:120
+        pathloss lteue-001 lteenb-002:105
+        pathloss lteue-001 lteue-002:105
+    135.0: |
+        pathloss lteue-001 lteenb-001:121
+        pathloss lteue-001 lteenb-002:104
+        pathloss lteue-001 lteue-002:104
+    140.0: |
+        pathloss lteue-001 lteenb-001:122
+        pathloss lteue-001 lteenb-002:103
+        pathloss lteue-001 lteue-002:103
+    145.0: |
+        pathloss lteue-001 lteenb-001:123
+        pathloss lteue-001 lteenb-002:102
+        pathloss lteue-001 lteue-002:102
+    150.0: |
+        pathloss lteue-001 lteenb-001:124
+        pathloss lteue-001 lteenb-002:101
+        pathloss lteue-001 lteue-002:101
+    155.0: |
+        pathloss lteue-001 lteenb-001:124
+        pathloss lteue-001 lteenb-002:101
+        pathloss lteue-001 lteue-002:101
+    160.0: |
+        pathloss lteue-001 lteenb-001:123
+        pathloss lteue-001 lteenb-002:102
+        pathloss lteue-001 lteue-002:102
+    165.0: |
+        pathloss lteue-001 lteenb-001:122
+        pathloss lteue-001 lteenb-002:103
+        pathloss lteue-001 lteue-002:103
+    170.0: |
+        pathloss lteue-001 lteenb-001:121
+        pathloss lteue-001 lteenb-002:104
+        pathloss lteue-001 lteue-002:104
+    175.0: |
+        pathloss lteue-001 lteenb-001:120
+        pathloss lteue-001 lteenb-002:105
+        pathloss lteue-001 lteue-002:105
+    180.0: |
+        pathloss lteue-001 lteenb-001:119
+        pathloss lteue-001 lteenb-002:106
+        pathloss lteue-001 lteue-002:106
+    185.0: |
+        pathloss lteue-001 lteenb-001:118
+        pathloss lteue-001 lteenb-002:107
+        pathloss lteue-001 lteue-002:107
+    190.0: |
+        pathloss lteue-001 lteenb-001:117
+        pathloss lteue-001 lteenb-002:108
+        pathloss lteue-001 lteue-002:108
+    195.0: |
+        pathloss lteue-001 lteenb-001:116
+        pathloss lteue-001 lteenb-002:109
+        pathloss lteue-001 lteue-002:109
+    200.0: |
+        pathloss lteue-001 lteenb-001:115
+        pathloss lteue-001 lteenb-002:110
+        pathloss lteue-001 lteue-002:110
+    205.0: |
+        pathloss lteue-001 lteenb-001:114
+        pathloss lteue-001 lteenb-002:111
+        pathloss lteue-001 lteue-002:111
+    210.0: |
+        pathloss lteue-001 lteenb-001:113
+        pathloss lteue-001 lteenb-002:112
+        pathloss lteue-001 lteue-002:112
+    215.0: |
+        pathloss lteue-001 lteenb-001:112
+        pathloss lteue-001 lteenb-002:113
+        pathloss lteue-001 lteue-002:113
+    220.0: |
+        pathloss lteue-001 lteenb-001:111
+        pathloss lteue-001 lteenb-002:114
+        pathloss lteue-001 lteue-002:114
+    225.0: |
+        pathloss lteue-001 lteenb-001:110
+        pathloss lteue-001 lteenb-002:115
+        pathloss lteue-001 lteue-002:115
+    230.0: |
+        pathloss lteue-001 lteenb-001:109
+        pathloss lteue-001 lteenb-002:116
+        pathloss lteue-001 lteue-002:116
+    235.0: |
+        pathloss lteue-001 lteenb-001:108
+        pathloss lteue-001 lteenb-002:117
+        pathloss lteue-001 lteue-002:117
+    240.0: |
+        pathloss lteue-001 lteenb-001:107
+        pathloss lteue-001 lteenb-002:118
+        pathloss lteue-001 lteue-002:118
+    245.0: |
+        pathloss lteue-001 lteenb-001:106
+        pathloss lteue-001 lteenb-002:119
+        pathloss lteue-001 lteue-002:119
+    250.0: |
+        pathloss lteue-001 lteenb-001:105
+        pathloss lteue-001 lteenb-002:120
+        pathloss lteue-001 lteue-002:120
+    255.0: |
+        pathloss lteue-001 lteenb-001:104
+        pathloss lteue-001 lteenb-002:121
+        pathloss lteue-001 lteue-002:121
+    260.0: |
+        pathloss lteue-001 lteenb-001:103
+        pathloss lteue-001 lteenb-002:122
+        pathloss lteue-001 lteue-002:122
+    265.0: |
+        pathloss lteue-001 lteenb-001:102
+        pathloss lteue-001 lteenb-002:123
+        pathloss lteue-001 lteue-002:123
+    270.0: |
+        pathloss lteue-001 lteenb-001:101
+        pathloss lteue-001 lteenb-002:124
+        pathloss lteue-001 lteue-002:124
+    275.0: |
+        pathloss lteue-001 lteenb-001:100
+        pathloss lteue-001 lteenb-002:125
+        pathloss lteue-001 lteue-002:125
+    280.0: |
+        flow_off name=SA_up
+        flow_off name=SA_down
+    285.0: |
+        end

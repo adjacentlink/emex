@@ -1,0 +1,5 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+
+<otestpoint-recorder file="${emex.log_path}/otestpoint.data">
+  <testpoint publish="127.0.0.1:8882"/>
+</otestpoint-recorder>

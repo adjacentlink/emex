@@ -1,0 +1,36 @@
+name: lte.enb
+type: waveform
+template: lte.enb
+description:
+    lte.enb is a model of an LTE Evolved Node-B, an LTE base station.
+parameters:
+    resources:
+        cpus:
+            default: 2
+    emane:
+        nemid:
+    phy:
+        propagationmodel:
+            default: freespace
+            choice: [precomputed, 2ray, freespace]
+        subid:
+            default: 500
+        antenna0:
+            default: omni
+        antenna0_north:
+            default: 0.0
+        antenna0_east:
+            default: 0.0
+        antenna0_up:
+            default: 0.0
+    rm:
+        resourceblocktxpower:
+            default: 6.0
+        numphysicalresourceblocks:
+            default: 25
+            choice: [6, 15, 25, 50, 75, 100]
+        downlink_frequency:
+            default: 2175000000
+        uplink_frequency:
+            default: 1775000000
+        pci:

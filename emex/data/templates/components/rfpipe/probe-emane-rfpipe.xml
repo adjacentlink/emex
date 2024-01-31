@@ -1,0 +1,9 @@
+<probe-emane-RFPipe address="127.0.0.1">
+  <probes>
+    <EMANE.RFPipe.Counters.General enable="no"/>
+    <EMANE.RFPipe.Tables.Events enable="no"/>
+    <EMANE.RFPipe.Tables.Neighbor enable="no"/>
+    <EMANE.RFPipe.Tables.Receive enable="no"/>
+    <EMANE.RFPipe.Tables.Status enable="no"/>
+  </probes>
+</probe-emane-RFPipe>

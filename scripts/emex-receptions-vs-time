@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+#
+# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+# * Neither the name of Adjacent Link LLC nor the names of its
+#   contributors may be used to endorse or promote products derived
+#   from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# See toplevel COPYING for more information.
+
+import argparse
+import sys
+import os
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from emex.analysisutils import read_tables
+
+plt.style.use('ggplot')
+
+description = 'Plot packet receptions per second vs. time.'
+
+graphfile = 'receptions-vs-time.png'
+
+parser = argparse.ArgumentParser(description=description)
+
+parser.add_argument('--colormap',
+                    metavar='COLORMAP',
+                    default='tab10',
+                    help='Specify the matplotlib colormap name to use for the facetgrid hue. ' \
+                    'The hue encodes the FLOWNUM for each transmitter. Default: tab10.')
+parser.add_argument('--height',
+                    type=float,
+                    action='store',
+                    default=None,
+                    help='Override graph height.')
+parser.add_argument('--width',
+                    type=float,
+                    action='store',
+                    default=None,
+                    help='Override graph width.')
+parser.add_argument('--margins',
+                    metavar='MARGINS',
+                    default='0.85:0.15:0.15:0.9',
+                    help='Colon separated value of top:left:bottom:right graph ' \
+                    'margins. Margins are expressed as a decimal from 0.0 to 1.0 ' \
+                    'where the horizontal margin runs from left to right and the ' \
+                    'vertical margin from bottom to top. So a bottom margin of 0.15 ' \
+                    'is 15%% from the bottom of the page and a top margin of 0.8 is ' \
+                    '20%% from the top of the page. Default: 0.85:0.15:0.15:0.9')
+parser.add_argument('--ymax',
+                    type=int,
+                    action='store',
+                    default=None,
+                    help='Override graph ymax value.')
+parser.add_argument('--rxnodeorder',
+                    default=None,
+                    help='Colon separated list of receiver nodenames. The graph receiver ' \
+                    'axis (x-axis) will use the provided ordering instead of lexical ordering. ' \
+                    'Receivers are also limited only to the nodes specified.')
+parser.add_argument('--txnodeorder',
+                    default=None,
+                    help='Colon separated list of transmitter nodenames. The graph transmitter ' \
+                    'axis (y-axis) will use the provided ordering instead of lexical ordering. ' \
+                    'Transmitters are also limited only to the nodes specified.')
+parser.add_argument('emexdirectories',
+                    metavar='EMEXDIRECTORY',
+                    nargs='+',
+                    help='An EMEX output directory.')
+
+args = parser.parse_args()
+
+top_margin, left_margin, bottom_margin, right_margin = \
+    map(float, args.margins.split(':'))
+
+for emexdirectory in args.emexdirectories:
+    if not os.path.isdir(emexdirectory):
+        print(f'{emexdirectory} is not a directory, skipping.', file=sys.stderr)
+
+        continue
+
+    sqlitefiles = [ f for f in os.listdir(emexdirectory)
+                    if f.endswith('sqlite') ]
+
+    mgen_rx,_,_ = read_tables(emexdirectory)
+
+    print(mgen_rx)
+
+    xmax = mgen_rx.relative_time.max()
+
+    ymax = args.ymax if args.ymax else ((mgen_rx.packets.max() // 10) + 1) * 10
+
+    all_txers = sorted(mgen_rx.source.unique())
+
+    all_rxers = sorted(mgen_rx.receiver.unique())
+
+    rxers = sorted(all_rxers)
+
+    txers = sorted(all_txers)
+
+    if args.rxnodeorder:
+        # order rxers based on rxnodeorder and limit output to these rxers
+        rxers = [nodename.strip() for nodename in args.rxnodeorder.split(':')]
+
+        mgen_rx = mgen_rx[mgen_rx.destination.isin(rxers)]
+
+    if args.txnodeorder:
+        # order txers based on txnodeorder and limit output to these txers
+        txers = [nodename.strip() for nodename in args.txnodeorder.split(':')]
+
+        mgen_rx = mgen_rx[mgen_rx.source.isin(txers)]
+
+    facet_height = 1.0
+
+    facet_width = 1.5
+
+    aspect = facet_width / facet_height
+
+    g = sns.FacetGrid(mgen_rx,
+                      row='source',
+                      col='receiver',
+                      hue='flow',
+                      row_order=txers,
+                      col_order=rxers,
+                      sharex=True,
+                      legend_out=True,
+                      aspect=aspect,
+                      xlim=(0, xmax),
+                      ylim=(0, ymax),
+                      palette=args.colormap,
+                      margin_titles=True)
+
+    sp = g.map_dataframe(sns.scatterplot,
+                         x='relative_time',
+                         y='packets',
+                         marker='.',
+                         linestyle=(0, (0,3)))
+
+    sp.add_legend()
+
+    g.set_axis_labels('time (sec)', 'packets')
+
+    g.fig.suptitle('Receptions vs. Time')
+
+    full_graphfile = os.path.join(emexdirectory, graphfile)
+
+    print(f'Writing {full_graphfile}')
+
+    g.fig.subplots_adjust(top=top_margin,
+                          left=left_margin,
+                          bottom=bottom_margin,
+                          right=right_margin)
+
+    g.fig.savefig(full_graphfile)

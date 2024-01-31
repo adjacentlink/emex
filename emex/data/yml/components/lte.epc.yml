@@ -1,0 +1,15 @@
+name: lte.epc
+type: host
+template: lte.epc
+description:
+    lte.epc is a model of an LTE Evolved Packet Core
+parameters:
+    resources:
+        cpus:
+            default: 2
+    net:
+        ipv4address:
+        ipv4mask:
+            default: 255.255.255.0
+        device:
+            default: spgw

@@ -1,0 +1,68 @@
+enb.start:
+   order: 101
+   wrappers:
+       lte.srsenbemane:
+
+epc.start:
+   order: 102
+   wrappers:
+       lte.srsepcemane:
+
+ue.start:
+   order: 103
+   wrappers:
+       lte.srsueemane:
+
+emane.start:
+    order: 200
+    wrappers:
+        emane.emane:
+        emane.spectrummonitor:
+            record: true
+        emane.spectrumotarecorder:
+        emane.emanejammersimpleservice:
+            loglevel: info
+
+initialcondition:
+    order: 300
+    wrappers:
+        emane.emanephyinit:
+            eventservicedevice: backchan0
+        utils.arpcache:
+        utils.sysctlutil:
+
+routing.start:
+    order: 400
+    wrappers:
+        utils.ip:
+        utils.nrlsmf:
+            socketdirectory: /tmp
+        utils.igmpbridge:
+        utils.smcrouted:
+            N: true
+        utils.ethtool:
+
+otestpoint.start:
+    order: 500
+    wrappers:
+        otestpoint.otestpointrecorder:
+        otestpoint.otestpointd:
+
+otestpointbroker.start:
+    order: 501
+    wrappers:
+        otestpoint.otestpointbroker:
+        utils.emexjsonserver:
+            otestpointendpoint: helper-lxc:9002
+            clientendpoint: 0.0.0.0:5001
+            loglevel: info
+traffic.run:
+    order: 600
+    wrappers:
+        utils.socat:
+        emane.emanenodeviewpublisher:
+        emane.otapublisher:
+            otamanagerdevice: ota0
+        utils.mgenmonitor:
+            loglevel: debug
+        utils.mgenremote:

@@ -1,0 +1,286 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2023 - Adjacent Link LLC, Bridgewater, New Jersey
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in
+#   the documentation and/or other materials provided with the
+#   distribution.
+# * Neither the name of Adjacent Link LLC nor the names of its
+#   contributors may be used to endorse or promote products derived
+#   from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# See toplevel COPYING for more information.
+
+import os
+import sys
+import signal
+import time
+from argparse import ArgumentParser
+
+from yaml import safe_load
+import pandas as pd
+
+from otestpoint.labtools import Stream, Transform, TableColumns
+
+
+
+argumentParser = ArgumentParser()
+
+argumentParser.add_argument('--ylim',
+                            metavar='YLIM',
+                            type=int,
+                            default=30,
+                            help='Max packets to report in an interval. Default: 30.')
+argumentParser.add_argument('-t',
+                            '--table',
+                            action='store_true',
+                            dest='table',
+                            help='show table not plot [default: %(default)s].')
+argumentParser.add_argument('endpoint',
+                            type=str,
+                            help="OpenTestPoint publish endpoint.")
+argumentParser.add_argument('platforms',
+                            nargs='+',
+                            help="The platforms to display - either an EMEX YAML file " \
+                            "from which the platform names are taken, or a list of one or" \
+                            "more platform names.")
+
+args = argumentParser.parse_args()
+
+platforms = args.platforms
+
+if len(args.platforms) == 1 and os.path.isfile(args.platforms[0]):
+    try:
+        yaml_file = safe_load(open(args.platforms[0]))
+
+        emoe_yaml = yaml_file['emoe']
+
+        platforms = emoe_yaml['platforms'].keys()
+
+    except:
+        print(f'Failed to read yaml file {yaml_file}, quitting.')
+
+        exit(1)
+
+# create a stream of data by specifying the probes you want to receive
+stream = Stream(args.endpoint, 'MGEN.Flows.Receive')
+
+# create variables
+udp_counts = stream.variable('Measurement_mgen_flows_receive', 'flows_udp')
+
+# create a Model
+model = stream.model(
+    Transform(udp_counts,
+              TableColumns(3,
+                           func=lambda col: sum([sum(c) for c in col]))),
+    labels=['recv_pkts'],
+    by_tag=True)
+
+# start the data stream
+stream.run()
+
+def make_tidy(df):
+    tidy_df_rows = []
+
+    for row in df.iterrows():
+        _,values = row
+
+        try:
+            # strip off the tail -component from the full
+            # host name. We expect only only one platform
+            # component to be the source and sink of traffic
+            # so this should be unambiguous
+            platform_cmp_name = values.Node
+
+            platform_name = platform_cmp_name[:platform_cmp_name.rfind('-')]
+
+            tidy_df_rows.append((platform_name, values.recv_pkts))
+
+        except Exception as e:
+            print(e)
+
+    tidy_df = pd.DataFrame(tidy_df_rows, columns=['platform','recv_pkts'])
+
+    return tidy_df
+
+
+run_loop = True
+
+if args.table:
+    pd.set_option('display.expand_frame_repr', False)
+
+    p = 0
+
+    while run_loop:
+        df,e,_ = model.data(ts=False, index=None)
+
+        if e != p:
+            print("\x1b[2J\x1b[H")
+            print(p, '=========')
+            tidy_df = make_tidy(df)
+            print(df)
+            p = e
+
+        time.sleep(1)
+
+else:
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+    import threading
+    from emex.monitors.utils.animatedlinegraph import AnimatedLineGraph
+    from emex.monitors.utils.compositeanimation import CompositeAnimation
+
+    # try using ggplot style if it is available
+    try:
+        plt.style.use('ggplot')
+    except:
+        pass
+
+    # line graph
+    time_step = 5
+
+    num_points  = 120
+
+    xs = range(num_points)
+
+    x = xs[0]
+
+    linelabels = platforms
+
+    num_rows = len(linelabels)
+
+    ys = [0] * num_rows
+
+    fig,axs = plt.subplots(num_rows, 1, sharex=True)
+
+    try:
+        # make axs a list if it is not iterable
+        iter(axs)
+    except:
+        axs = [axs]
+
+    fig.canvas.set_window_title('Rx Packet Counts')
+
+    fig.suptitle('Rx Packet Counts vs. Time')
+
+    anims = {}
+
+    for row,(linelabel,ax,y) in enumerate(zip(linelabels, axs, ys), start=1):
+        anims[linelabel] = \
+            AnimatedLineGraph(fig, ax, x, [y], num_points, [linelabel], plt.get_cmap('viridis'))
+
+        ax.set_xlim(0,num_points*time_step)
+
+        ax.set_ylabel(linelabel,
+                      rotation=0,
+                      horizontalalignment='right',
+                      verticalalignment='center')
+
+        ax.set_ylim((0, args.ylim))
+
+        ax.set_yticks((0, args.ylim))
+
+        ax.spines['top'].set_visible(False)
+
+        ax.spines['right'].set_visible(False)
+
+        ax.spines['left'].set_color('#a0a0a0')
+
+        ax.tick_params(axis='y', colors='#a0a0a0')
+
+        ax.grid(visible=True, axis='y')
+
+        ax.spines['bottom'].set_visible(False)
+
+        if row == num_rows:
+            ax.set_xlabel('time')
+
+            ax.spines['bottom'].set_visible(False)
+
+            ax.spines['bottom'].set_color('#a0a0a0')
+
+            ax.tick_params(axis='x', colors='#a0a0a0')
+
+        plt.subplots_adjust(left=0.25)
+
+    anim_collection = CompositeAnimation(anims.values())
+
+    run_loop = True
+
+    def graph_loop():
+        x = 0
+        p = 0
+        printed = False
+
+        while run_loop:
+            df,e,_ = model.data(ts=False, index=None)
+
+            if e != p:
+                p = e
+
+                x += time_step
+
+                tidy_df = make_tidy(df)
+
+                found_missing = False
+
+                for _,row in tidy_df.iterrows():
+                    if not row.platform in anims:
+                        found_missing = True
+                        if not printed:
+                            print('Warning, reporting platform "%s" not found in list of platforms, skipping'
+                                  % row.platform, file=sys.stderr)
+                        continue
+
+                    anims[row.platform].update(x,[row.recv_pkts])
+
+                if found_missing:
+                    printed = True
+
+            time.sleep(1)
+
+    thread = threading.Thread(target=graph_loop)
+
+    thread.setDaemon(True)
+
+    thread.start()
+
+    def handler(signum, frame):
+        run_loop = False
+        plt.close('all')
+
+    signal.signal(signal.SIGINT, handler)
+
+    ani = animation.FuncAnimation(fig,
+                                  anim_collection.animate,
+                                  init_func=anim_collection.init,
+                                  interval=5000,
+                                  blit=False,
+                                  save_count=50)
+
+    plt.show()
+
+    run_loop = False
+
+    thread.join()

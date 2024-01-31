@@ -1,0 +1,46 @@
+name: rfpipe
+type: waveform
+template: rfpipe
+description:
+    Open Source RF Pipe radio model.
+parameters:
+    resources:
+        cpus:
+            default: 1
+    emane:
+        nemid:
+    phy:
+        propagationmodel:
+            default: freespace
+            choice: [precomputed, 2ray, freespace]
+        subid:
+            default: 100
+        antenna0:
+            default: omni
+        antenna0_north:
+            default: 0.0
+        antenna0_east:
+            default: 0.0
+        antenna0_up:
+            default: 0.0
+    rm:
+        datarate:
+            default: 1000000
+        delay:
+            default: 0.0
+        jitter:
+            default: 0.0
+        txpower:
+            default: 0.0
+        rxfrequency:
+            default: 2347000000
+        txfrequency:
+            default: 2347000000
+        bandwidth:
+            default: 1000000
+    net:
+        ipv4address:
+        ipv4mask:
+            default: 255.255.255.0
+        device:
+            default: emane0

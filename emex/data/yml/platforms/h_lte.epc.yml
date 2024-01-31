@@ -1,0 +1,8 @@
+from:
+    template: packet_core
+    h1: lte.epc
+
+name: h_lte.epc
+type: platform
+description:
+    Single Platform Container for running an LTE ePC.

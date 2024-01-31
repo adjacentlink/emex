@@ -1,0 +1,8 @@
+from:
+    template: base_station
+    r1: lte.enb
+
+name: bs_lte.enb
+type: platform
+description:
+    Base station for running an LTE eNB.

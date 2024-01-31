@@ -1,0 +1,8 @@
+from:
+    template: single_channel_radio
+    r1: lte.ue
+
+name: scr_lte.ue
+type: platform
+description:
+    Single Platform Container for running an LTE UE (mobile).

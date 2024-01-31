@@ -1,0 +1,74 @@
+name: demo.rfpipe.jammer
+description: |
+    Two rfpipe nodes with a jammer midway in between.
+
+    The rfpipe nodes are configured with different, complementary
+    tx and rx frequencies. The nodes send traffic to each other.
+
+    Scenario events:
+
+    T=0
+    The jammer is off and the two nodes start traffic to each other.
+
+    T=20
+    The jammer jams rfpipe-001 from an overlapping band with a 75
+    percent duty cycle pattern and half second period.
+
+    T=40
+    The jammer jams rfpipe-001 and rfpipe-002 from an overlapping band
+    with a 75 percent duty cycle pattern and half second period.
+
+    T=60
+    The jammer jams rfpipe-002 from an overlapping band with a 75
+    percent duty cycle pattern and half second period.
+
+    T=80
+    The jammer is turned off.
+
+    T=100
+    The traffic flows top.
+
+    T=110
+    The scenario ends.
+
+emoe:
+    platforms:
+        rfpipe-001:
+            type: scr_rfpipe
+            parameters:
+                r1.rm.txpower: 10.0
+                r1.rm.rxfrequency: 2050000000
+                r1.rm.txfrequency: 2100000000
+        rfpipe-002:
+            type: scr_rfpipe
+            parameters:
+                r1.rm.txpower: 10.0
+                r1.rm.rxfrequency: 2100000000
+                r1.rm.txfrequency: 2050000000
+        jammer-001:
+            type: h_simple_jammer
+        sensor-001:
+            type: h_spectrum_monitor
+
+    initial_conditions:
+        pov: |
+            rfpipe-001  37.000 -109.050 3.0
+            rfpipe-002  37.000 -109.040 3.0
+            jammer-001  37.000 -109.045 3.0
+            sensor-001  37.000 -109.047 3.0
+
+scenario:
+    0.0: |
+        flow_on name=flow1 source=rfpipe-* destination=rfpipe-* proto=udp periodic 10.0 512
+    20.0: |
+        jam_on jammer-001 20.0 5000000 500000 75 2052000000
+    40.0: |
+        jam_on jammer-001 20.0 5000000 500000 75 2052000000,2098000000
+    60.0: |
+        jam_on jammer-001 20.0 5000000 500000 75 2098000000
+    80.0: |
+        jam_off jammer-001
+    100.0: |
+        flow_off name=flow1
+    110.0: |
+        end

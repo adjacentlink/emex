@@ -1,0 +1,14 @@
+<otestpoint id="${emex.hostname}" discovery="0.0.0.0:8881" publish="0.0.0.0:8882">
+  <probe configuration="probe-emex-monitor.xml">
+    <python module="otestpoint.emex.monitor" class="Monitor"/>
+  </probe>
+  <probe configuration="probe-emane-physicallayer.xml">
+    <python module="otestpoint.emane.physicallayer" class="PhysicalLayer"/>
+  </probe>
+  <probe configuration="probe-srslte-enb.xml">
+    <python module="otestpoint.lte.srsenb" class="SRSENB"/>
+  </probe>
+  <probe configuration="probe-emanelte-enb.xml">
+    <python module="otestpoint.lte.emaneenb" class="EMANEENB"/>
+  </probe>
+</otestpoint>

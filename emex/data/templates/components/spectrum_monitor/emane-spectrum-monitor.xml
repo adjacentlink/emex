@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<emane-spectrum-monitor id="${emane.nemid}">
+  <emulator>
+  <param name="otamanagergroup" value="224.1.2.8:45702"/>
+  <param name="otamanagerdevice" value="ota0"/>
+  <param name="otamanagerchannelenable" value="on"/>
+  <param name="eventservicegroup" value="224.1.2.8:45703"/>
+  <param name="eventservicedevice" value="backchan0"/>
+  <param name="controlportendpoint" value="0.0.0.0:47000"/>
+  <param name="antennaprofilemanifesturi" value="/tmp/etce/current_test/antennaprofilemanifest.xml"/>
+  </emulator>
+  <physical-layer>
+    <param name="fixedantennagainenable"   value="${phy.fixedantennagainenable}"/>
+    <param name="fixedantennagain"         value="${phy.fixedantennagain}"/>
+    <param name="propagationmodel"         value="${phy.propagationmodel}"/>
+    <param name="spectrumquery.publishendpoint" value="0.0.0.0:8801"/>
+    <param name="spectrumquery.recorderfile" value="${emex.log_path}/emane-spectrum-monitor.data"/>
+  </physical-layer>
+</emane-spectrum-monitor>
