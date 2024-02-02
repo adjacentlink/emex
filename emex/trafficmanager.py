@@ -270,7 +270,7 @@ class TrafficManager:
 
             flow_id = (plt_num + 100) * 100 + flow_count
 
-            dst_address = f'224.1.1.{plt_num}'
+            dst_address = f'224.252.1.1'
 
             dst_port = flow_id
 
