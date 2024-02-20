@@ -138,6 +138,8 @@ class Plugin(BasePlugin):
 
         self._client_cache_data = {}
 
+        self._client_sockets = {}
+
         ctx.create_channel_tcp_server(
             local=self._config.client_listen_address,
             local_port=self._config.client_listen_port,
@@ -211,10 +213,13 @@ class Plugin(BasePlugin):
         logging.info('destroy')
 
 
-    def _process_client_accept(self, ctx, channel_id, client_endpoint):
+    def _process_client_accept(self, ctx, channel_id, client_endpoint, **kwargs):
         ip,port = client_endpoint
 
         client_id = (channel_id, client_endpoint)
+
+        print(f'XXX {type(kwargs["remote"])}')
+        self._client_sockets[client_id] = kwargs['remote']
 
         logging.info(f'process accept channel_id: {channel_id} ' \
                      f'endpoint: {ip}:{port}')
@@ -635,12 +640,14 @@ class Plugin(BasePlugin):
             if emoe_rt.state > EmoeState.UPDATING:
                 continue
 
+            local_address,_ = self._client_sockets[client_id].getsockname()
+
             for host_port,(service_name,_) in emoe_rt.host_port_mappings.items():
                 emoe_accessor_proto = entry.emoe_accessors.add()
 
                 emoe_accessor_proto.service_name = service_name
 
-                emoe_accessor_proto.ip_address = self._config.client_listen_address
+                emoe_accessor_proto.ip_address = local_address
 
                 emoe_accessor_proto.port = host_port
 
@@ -688,7 +695,7 @@ class Plugin(BasePlugin):
         return reply
 
 
-    def _process_container_accept(self, ctx, channel_id, container_endpoint):
+    def _process_container_accept(self, ctx, channel_id, container_endpoint, **kwargs):
         ip,port = container_endpoint
 
         logging.debug(f'_process_container_accept on {channel_id} from {ip}:{port}')
@@ -802,7 +809,7 @@ class Plugin(BasePlugin):
         logging.info(f'closed connection on channel {channel_id}')
 
 
-    def _log_container_worker_accept(self, ctx, channel_id, container_endpoint):
+    def _log_container_worker_accept(self, ctx, channel_id, container_endpoint, **kwargs):
         ip,port = container_endpoint
 
         logging.debug(f'_log_container_worker_accept on {channel_id} from {ip}:{port}')
