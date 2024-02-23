@@ -98,14 +98,17 @@ class ContainerWorker(Thread):
                         detach=True,
                         command=f'/opt/run-emexcontainerd.sh -l {loglevel}')
 
-                    # pause and then confirm the new container is
-                    # in the list of running containers
-                    time.sleep(1)
-
+                    # the start call didn't thrown an error, wait to confirm
+                    # the container appears in the list of running containers
+                    attempts = 10
                     found = False
-                    for c in self._dclient.containers.list(all=True):
-                        if c.name == emoe_rt.container_name:
-                            found = True
+                    while not found and attempts>0:
+                        time.sleep(1)
+                        for c in self._dclient.containers.list(all=True):
+                            if c.name == emoe_rt.container_name:
+                                found = True
+                                break
+                        attempts -= 1
 
                     if found:
                         self._worker_out_q.put(
