@@ -188,7 +188,7 @@ class ContainerManager:
 
         for c in containers:
             if c.image.tags:
-                if self._config.docker_image in c.image.tags[0].split()[0]:
+                if self._config.docker_image in c.image.tags:
                     self.stop_and_remove(c)
 
 
@@ -197,7 +197,7 @@ class ContainerManager:
 
         for c in containers:
             if c.image.tags:
-                if self._config.docker_image in c.image.tags[0].split()[0]:
+                if self._config.docker_image in c.image.tags:
 
                     try:
                         if c.status.lower() in ('created', 'running'):
