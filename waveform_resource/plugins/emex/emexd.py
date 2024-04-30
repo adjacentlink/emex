@@ -218,7 +218,6 @@ class Plugin(BasePlugin):
 
         client_id = (channel_id, client_endpoint)
 
-        print(f'XXX {type(kwargs["remote"])}')
         self._client_sockets[client_id] = kwargs['remote']
 
         logging.info(f'process accept channel_id: {channel_id} ' \
