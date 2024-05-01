@@ -217,7 +217,7 @@ class Plugin(BasePlugin):
         self._ctx.channel_send(self._emexd_channel_id, bufstr, remote=self._service_endpoint)
 
 
-    def _on_connect_emexd(self, ctx, channel_id, remote):
+    def _on_connect_emexd(self, ctx, channel_id, client_endpoint):
         self._emexd_channel_id = channel_id
 
         logging.info('connected')
@@ -284,21 +284,21 @@ class Plugin(BasePlugin):
                     self.change_state(EmoeState.RUNNING)
 
 
-    def _process_scenario_client_accept(self, ctx, channel_id, remote):
-        logging.debug('_process_scenario_client_accept')
+    def _process_scenario_client_accept(self, ctx, channel_id, client_endpoint, **kwargs):
+        logging.debug(f'_process_scenario_client_accept')
 
         # only allow a single scenario client at a a time
         if not self._scenario_channel_id:
             self._scenario_channel_id = channel_id
 
-            ip,port = remote
+            ip,port = client_endpoint
 
             self._cache_data = ''
 
             logging.info(f'accept scenario client on channel_id: {channel_id} ' \
                          f'endpoint: {ip}:{port}')
         else:
-            ip,port = remote
+            ip,port = client_endpoint
 
             logging.error(f'received connect from a second client on channel_id: {channel_id} ' \
                           f'from endpoint: {ip}:{port}. Quitting.')
@@ -400,7 +400,7 @@ class Plugin(BasePlugin):
         ctx.create_timer(time.time()+5, self._handle_heartbeat_timer)
 
 
-    def send_result(self, remote, client_sequence, result, message, flows_df):
+    def send_result(self, client_endpoint, client_sequence, result, message, flows_df):
         logging.debug(f'send_traffic_result result={result} message={message}')
 
         reply_str =\
@@ -409,24 +409,24 @@ class Plugin(BasePlugin):
                                                         message,
                                                         flows_df)
 
-        self._send_scenario_reply(remote, reply_str)
+        self._send_scenario_reply(client_endpoint, reply_str)
 
 
-    def _send_scenario_reply(self, remote, reply_str):
-        logging.debug(f'_send_scenario_reply {remote}')
+    def _send_scenario_reply(self, client_endpoint, reply_str):
+        logging.debug(f'_send_scenario_reply {client_endpoint}')
 
         format_str = '!I%ds' % len(reply_str)
 
         message = struct.pack(format_str, len(reply_str), reply_str)
 
-        self._ctx.channel_send(self._scenario_channel_id, message, remote=remote)
+        self._ctx.channel_send(self._scenario_channel_id, message, remote=client_endpoint)
 
-        logging.debug(f'_send_scenario_reply {remote} sent')
+        logging.debug(f'_send_scenario_reply {client_endpoint} sent')
 
 
-    def _on_scenario_close(self, ctx, channel_id, remote):
+    def _on_scenario_close(self, ctx, channel_id, client_endpoint):
         if self._scenario_channel_id:
             logging.info(f'_on_scenario_close close channel_id={self._scenario_channel_id} '
-                         f'remote={remote}')
+                         f'client_endpoint={client_endpoint}')
 
             self._scenario_channel_id = None

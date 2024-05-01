@@ -249,7 +249,7 @@ class Manager:
                      f'emoe_id={emoe_id} current_state={emoe_rt.state.name} new_state={state.name}.')
 
         # start the emulation on receiving CONNECTED on an QUEUED emoe
-        if emoe_rt.state == EmoeState.QUEUED and state == EmoeState.CONNECTED:
+        if emoe_rt.state <= EmoeState.STARTING and state == EmoeState.CONNECTED:
             emoe_rt.state = EmoeState.STARTING
 
             emoe_rt.container_id = container_id

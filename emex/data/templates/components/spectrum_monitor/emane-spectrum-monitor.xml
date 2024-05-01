@@ -15,5 +15,6 @@
     <param name="propagationmodel"         value="${phy.propagationmodel}"/>
     <param name="spectrumquery.publishendpoint" value="0.0.0.0:8801"/>
     <param name="spectrumquery.recorderfile" value="${emex.log_path}/emane-spectrum-monitor.data"/>
+    <param name="noisemaxclampenable" value="on"/>
   </physical-layer>
 </emane-spectrum-monitor>
