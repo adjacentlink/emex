@@ -14,7 +14,7 @@ COPY --from=gcr.io/automated-builds-303920/ubuntu22.04.waveform-resource /opt/bu
 RUN dpkg -i dependencies/*; apt-get -y -f install
 
 # Build tools
-RUN apt-get -y install git autoconf automake libtool dh-python debhelper pkg-config python3-setuptools
+RUN apt-get -y install git autoconf automake libtool dh-python debhelper pkg-config python3-setuptools protobuf-compiler libprotobuf-dev
 
 RUN git clone https://github.com/adjacentlink/emex -b develop
 

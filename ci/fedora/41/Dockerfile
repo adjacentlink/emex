@@ -11,7 +11,7 @@ COPY --from=gcr.io/automated-builds-303920/fedora41.waveform-resource /opt/built
 RUN dnf -y install dependencies/*\.rpm
 
 # Build tools
-RUN dnf -y install git make autoconf automake libtool rpm-build python3-setuptools python3-devel
+RUN dnf -y install git make autoconf automake libtool rpm-build python3-setuptools python3-devel python3-protobuf protobuf-devel
 
 RUN git clone https://github.com/adjacentlink/emex -b develop
 

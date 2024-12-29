@@ -13,7 +13,7 @@ COPY --from=gcr.io/automated-builds-303920/rockylinux8.waveform-resource /opt/bu
 RUN dnf -y install dependencies/*\.rpm
 
 # Build tools
-RUN dnf -y install git make autoconf automake libtool rpm-build python3-setuptools python3-devel
+RUN dnf -y install git make autoconf automake libtool rpm-build python3-setuptools python3-devel protobuf-compiler libprotobuf-dev
 
 RUN git clone https://github.com/adjacentlink/emex -b develop
 
