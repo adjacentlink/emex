@@ -245,7 +245,7 @@ class ContainerManager:
 
         # exclude the collided port if you can find it in the error message
         m1 = re.match(r'.*\d+\.\d+\.\d+\.\d+:(?P<port>\d+): bind: address already in use', message)
-        m2 = re.match(f'.*\d+\.\d+\.\d+\.\d+:(?P<port>\d+) failed: port is already allocated', message)
+        m2 = re.match(r'.*\d+\.\d+\.\d+\.\d+:(?P<port>\d+) failed: port is already allocated', message)
 
         port_error = False
 

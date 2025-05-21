@@ -50,10 +50,11 @@ clean-local: setup.py
 install: setup.py
 	$(PYTHON) setup.py install \
 	    -O1 \
-        --record .installedfiles \
-	    --prefix=$(prefix) \
-	    --exec-prefix=$(exec_prefix) \
-	    $(if $(DESTDIR),--root=$(DESTDIR))
+            --record .installedfiles \
+            --prefix=$(prefix) \
+            --exec-prefix=$(exec_prefix) \
+            $(if $(DESTDIR),--root=$(DESTDIR)) \
+            $(if $(subst false,,$(HAVE_DEB)),--install-layout=deb)
 
 uninstall:
 	if test -f .installedfiles; then xargs -a .installedfiles rm -f; fi
