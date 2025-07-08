@@ -37,7 +37,6 @@ from lxml import etree
 import os
 import pprint
 import re
-from xml import etree
 
 from yaml import safe_load
 

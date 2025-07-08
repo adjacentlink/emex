@@ -126,6 +126,11 @@ class Plugin(BasePlugin):
         """
         logging.info('initialize')
 
+        if configuration_file:
+            if not os.path.isfile(configuration_file):
+                logging.error(f'Unable to find "{configuration_file}", quitting.')
+                exit(1)
+
         if not configuration_file and os.path.isfile(Plugin.DEFAULT_CONFIGURATION_FILE):
             configuration_file = Plugin.DEFAULT_CONFIGURATION_FILE
 
