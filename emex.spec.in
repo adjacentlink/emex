@@ -10,10 +10,6 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Vendor: Adjacent Link LLC
 BuildArch: noarch
 %define base_name emex
-%define with_old_depends 0
-%define with_pathfix 1
-
-%define with_pathfix 0%{!?el7}
 
 %global _description \
 EMANE Node Director
@@ -36,7 +32,7 @@ make
 
 %install
 make  DESTDIR=${RPM_BUILD_ROOT} PYTHON=%{__python3} install
-pathfix.py -pni "%{__python3} %{py3_shbang_opts}" %{buildroot}%{_bindir}/*
+%py3_shebang_fix %{buildroot}%{_bindir}/*
 
 find ${RPM_BUILD_ROOT} -name '*.a' -exec rm '{}'  \;
 find ${RPM_BUILD_ROOT} -name '*.la' -exec rm '{}' \;
