@@ -153,7 +153,7 @@ orchestrated by the `emex run` command discussed later.
 ## Installation
 
 Installing EMEX requires installing the emex package and building the
-emex container. EMEX is tested on Ubuntu 20.04 and 22.04. You will
+emex container. EMEX is tested on Ubuntu. You will
 need to install *git* to clone the EMEX repository and *docker.io* (deb
 package, not snap - see [Troubleshooting Notes](#troubleshooting-notes)) to run emulations. Be sure to add your user account
 to the *docker* group too.
