@@ -153,18 +153,39 @@ orchestrated by the `emex run` command discussed later.
 ## Installation
 
 Installing EMEX requires installing the emex package and building the
-emex container. EMEX is tested on Ubuntu 20.04 and 22.04. You will
+emex container. EMEX is tested on Ubuntu. You will
 need to install *git* to clone the EMEX repository and *docker.io* (deb
 package, not snap - see [Troubleshooting Notes](#troubleshooting-notes)) to run emulations. Be sure to add your user account
 to the *docker* group too.
 
 
-### Ubuntu 20.04 and 22.04
+### Ubuntu 22.04 and 24.04
+
+The EMEX Docker image is built from the companion [emex-docker](https://github.com/adjacentlink/emex-docker)
+repository.
 
 ```
 # Install dependencies and add username to docker group
 [user@host]$ sudo apt-get install git docker.io
 [user@host]$ sudo usermod -aG docker YOURUSERNAME
+
+# Clone the emex-docker repository
+[user@host]$ git clone https://github.com/adjacentlink/emex-docker.git
+
+# Run build-docker-image.sh to build the emex docker image.
+[user@host]$ cd emex-docker
+[user@host]$ ./build-docker-image.sh
+Building docker image emex:0.6.7
+    ...
+Successfully built b4fb7830e1f4
+Successfully tagged emex:0.6.7
+Successfully tagged emex:latest
+
+# Verify emex image
+[user@host]$ docker image ls emex
+REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
+emex         0.6.7     b4fb7830e1f4   2 minutes ago   4.76GB
+emex         latest    b4fb7830e1f4   2 minutes ago   4.76GB
 
 # Clone the emex repository
 [user@host]$ git clone https://github.com/adjacentlink/emex.git
@@ -174,24 +195,7 @@ to the *docker* group too.
 [user@host]$ ./autogen.sh; ./configure; make deb
 [user@host]$ sudo dpkg -i .debbuild/emex_*all.deb; sudo apt-get install -f
 
-# Run build-docker-image.sh to build the emex docker image.
-[user@host]$ cd docker
-[user@host]$ ./build-docker-image.sh
-Building docker image emex:0.6.3
-    ...
-Successfully built b4fb7830e1f4
-Successfully tagged emex:0.6.3
-Successfully tagged emex:latest
-
-# Verify emex image
-[user@host]$ docker image ls emex
-REPOSITORY   TAG       IMAGE ID       CREATED          SIZE
-emex         0.6.3     b4fb7830e1f4   2 minutes ago   4.76GB
-emex         latest    b4fb7830e1f4   2 minutes ago   4.76GB
 ```
-
-
-
 
 
 ## Getting Started

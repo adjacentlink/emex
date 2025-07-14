@@ -596,7 +596,7 @@ class BuilderImplEtce:
         for etce_builders_dir in etce_builders_dirs:
             stepsfiles.extend([os.path.join(etce_builders_dir, f)
                                for f in os.listdir(etce_builders_dir)
-                               if re.match('steps.*\.yml', f)])
+                               if re.match(r'steps.*\.yml', f)])
 
         steps_by_order = {}
 

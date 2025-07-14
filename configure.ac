@@ -1,5 +1,5 @@
 AC_COPYRIGHT([
-  Copyright (c) 2022-2024 - Adjacent Link LLC, Bridgewater, New Jersey
+  Copyright (c) 2022-2025 - Adjacent Link LLC, Bridgewater, New Jersey
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@ AC_COPYRIGHT([
   See toplevel COPYING for more information.
 ])
 
-AC_INIT([emex],0.6.6,[labs at adjacentlink dot com])
+AC_INIT([emex],[0.6.7],[labs at adjacentlink dot com])
 
 AM_INIT_AUTOMAKE([1.9.6])
 
